@@ -46,7 +46,7 @@ The instructions assume you have
 
 # Topology File <a name="topology-file"></a>#
 
-See the [example topology file](topology.json)
+See the [example topology file](test-repo/topology.json)
 
 The topology file contains a single topology, or an array of topologies.
 Each topology has some overall properties, an array of nodes and 
@@ -54,7 +54,7 @@ an array defining topology cookbook attributes.
 
 ## Overall Topology Properties <a name="topology-properties"></a>
 
-```json
+```
     {
         "name": "test1",
         "chef_environment": "test",
@@ -82,7 +82,7 @@ will be added to each node.
 ## Node List <a name="node-list"></a>
 Each topology contains a list of `nodes`.
 
-```json
+```
     {
         "name": "test1",
         ...
@@ -122,7 +122,7 @@ an attribute file in a topology-specific cookbook. Each
 attribute file is described in an entry in the 'cookbook_attributes'
 array.
 
-```json
+```
 	"cookbook_attributes": [
 		{
 			"cookbook": "testsys_test1",
@@ -169,9 +169,9 @@ in the above) will generate an entry in the attribute file such as:
 Attributes listed under the `conditional` property will generate an 
 entry in the attribute file such as:
 
-```ruby
+```
   if (node['topo']['node_type'] == "buildserver")
-    normal['mongodb'][package_version] = "2.5.1"
+    normal['mongodb']['package_version'] = "2.5.1"
   end
 ```
 
@@ -242,7 +242,7 @@ The knife topo cookbook create subcommand supports the following additional opti
 
 Option        | Description
 ------------  | -----------
-See [knife cookbook create](http://docs.opscode.com/chef/knife.html#cookbook)  |  
+See [knife cookbook create](http://docs.opscode.com/chef/knife.html#cookbook)  |   Options supported by `knife cookbook create` are passed through
 
 ### Examples:
 The following will generate the topology cookbook attribute files for
@@ -262,7 +262,7 @@ The knife topo cookbook upload subcommand supports the following additional opti
 
 Option        | Description
 ------------  | -----------
-See [knife cookbook upload](http://docs.opscode.com/chef/knife.html#cookbook)  | 
+See [knife cookbook upload](http://docs.opscode.com/chef/knife.html#cookbook)  |  Options supported by `knife cookbook upload` are passed through
 
 
 ### Examples:
