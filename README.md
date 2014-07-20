@@ -24,19 +24,19 @@ This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS.
 
 # Usage #
 
-Define one or more topologies in a [topology file](#markdown-header-topology-file). 
+Define one or more topologies in a [topology file](#topology-file). 
 
 Import the topology file into your local chef repo using
-[knife topo import](#markdown-header-knife-topo-import). Create and optionally
+[knife topo import](#import). Create and optionally
 bootstrap a topology on the Chef server using 
-[knife topo create](#markdown-header-knife-topo-create), and update it
-using [knife topo update](#markdown-header-knife-topo-update).
+[knife topo create](#create), and update it
+using [knife topo update](#update).
 
 # Getting Started #
 
-Try out this plugin using a [test repo](knife-topo/src/master/test-repo) 
+Try out this plugin using a [test repo](test-repo) 
 which you can download from Github or is included in the installed gem. See the 
-[Instructions](knife-topo/src/master/test-repo/Instructions.md) for a
+[Instructions](Instructions.md) for a
 demo script, explanation, and troubleshooting.
 
 The instructions assume you have
@@ -44,15 +44,15 @@ The instructions assume you have
  or equivalent installed and working with Vagrant and VirtualBox, but
  none of these are requirements for this plugin. 
 
-# Topology File #
+# Topology File <a name="topology-file"></a>#
 
-See the [example topology file](knife-topo/src/master/test-repo/topology.json)
+See the [example topology file](topology.json)
 
 The topology file contains a single topology, or an array of topologies.
 Each topology has some overall properties, an array of nodes and 
 an array defining topology cookbook attributes.
 
-## Overall Properties
+## Overall Topology Properties <a name="topology-properties"></a>
 
 ```json
     {
@@ -69,7 +69,7 @@ an array defining topology cookbook attributes.
         ],
         "cookbook_attributes" : [
         ]
-    },
+    }
 ```
 The `name` is how you will refer to the topology in the
 `knife topo` subcommands.
@@ -79,13 +79,13 @@ here will be applied to all nodes in the topology, unless alternative
 values are provided for a specific node.  The `tags` 
 will be added to each node. 
     
-## Node List
+## Node List <a name="node-list"></a>
 Each topology contains a list of `nodes`.
 
 ```json
-    "{
+    {
         "name": "test1",
-        ...,
+        ...
         "nodes": {
             "buildserver": {
                 "name": "buildserver01",
@@ -94,8 +94,9 @@ Each topology contains a list of `nodes`.
                 "chef_environment": "dev",
                 "run_list": ["role[base-ubuntu]", "ypo::db", "recipe[ypo::appserver]"],
                 "normal": {
-                  "topo.node_type": "buildserver",
-                  "another": "Value 1"
+                  "topo" : {
+                    node_type": "buildserver"
+                  }
                 },
                 "tags": ["build"]
             },
@@ -114,7 +115,7 @@ fields are optional.
 The `ssh_host` and `ssh_port` are optional fields that are used to
 bootstrap a node.
 
-## Topology Cookbook Attributes
+## Topology Cookbook Attributes <a name="cookbook-attributes"></a>
 
 Each topology may have attributes that are set via
 an attribute file in a topology-specific cookbook. Each
@@ -174,21 +175,21 @@ entry in the attribute file such as:
   end
 ```
 
-# Subcommands #
+# Subcommands <a name="subcommands"></a>
 
 The main subcommands for `knife topo` are:
 
-* `knife topo import` - Import one or more into your workspace/local repo
-* `knife topo create` - Create and optionally bootstrap a topology of nodes
-* `knife topo update` - Update a topology of nodes
+* [knife topo import](#import) - Import one or more into your workspace/local repo
+* [knife topo create](#create) - Create and optionally bootstrap a topology of nodes
+* [knife topo update](#update) - Update a topology of nodes
 
 The additional subcommands can also be useful, depending on your
 workflow:
 
-* `knife topo bootstrap` - Bootstraps a topology of nodes
-* `knife topo cookbook create` - Generate the topology cookbooks
-* `knife topo cookbook upload` - Upload the topology cookbooks
-* `knife export` - Export data from a topology (or from nodes that you want in a topology)
+* [knife topo bootstrap](#bootstrap)- Bootstraps a topology of nodes
+* [knife topo cookbook create](#cookbook-create) - Generate the topology cookbooks
+* [knife topo cookbook upload](#cookbook-upload) - Upload the topology cookbooks
+* [knife export](#export) - Export data from a topology (or from nodes that you want in a topology)
 
 The topologies are data bag items in the 'topologies' data bag, so 
 you can also use knife commands such as:
@@ -205,7 +206,7 @@ Option        | Description
 ------------  | -----------
 -D, --data-bag DATA_BAG    | The data bag to use for the topologies. Defaults to 'topologies'.
 
-## knife topo bootstrap
+## knife topo bootstrap <a name="bootstrap"></a>
 
 	knife topo bootstrap TOPOLOGY
 
@@ -228,12 +229,12 @@ user name of vagrant, password of vagrant, and running using sudo.
 
 	$ knife topo bootstrap sys1_test test1 -x vagrant -P vagrant --sudo
 
-## knife topo cookbook create 
+## knife topo cookbook create <a name="cookbook-create"></a>
 
 	knife topo cookbook create TOPOLOGY
 
 Generates the topology cookbook attribute files and attributes described in the 
-'cookbook_attributes' property.
+[cookbook_attributes](#cookbook-attributes) property.
 
 ### Options:
 
@@ -249,7 +250,7 @@ topology test1.
 
 	$ knife topo cookbook create test1
 
-## knife topo cookbook upload 
+## knife topo cookbook upload <a name="cookbook-upload"></a>
 
 	knife topo cookbook upload TOPOLOGY
 
@@ -271,7 +272,7 @@ topology test1.
 	$ knife topo cookbook create test1
 	
   
-## knife topo create 
+## knife topo create <a name="create"></a>
 
 	knife topo create TOPOLOGY
 
@@ -288,7 +289,7 @@ The knife topo create subcommand supports the following additional options.
 
 Option        | Description
 ------------  | -----------
---bootstrap    | Bootstrap the topology (see [topo bootstrap](#markdown-header-knife-topo-bootstrap))
+--bootstrap    | Bootstrap the topology (see [topo bootstrap](#bootstrap))
 See [knife bootstrap](http://docs.opscode.com/knife_bootstrap.html)  | Options supported by `knife bootstrap` are passed through to the bootstrap command
 --no-upload   | Do not upload topology cookbooks
 
@@ -302,7 +303,7 @@ or upload topology cookbooks.
 
 $ knife topo create test1 --no-upload
 
-## knife topo export 
+## knife topo export <a name="export"></a>
 
 	knife topo export [ TOPOLOGY [ NODE ... ] 
 
@@ -310,11 +311,10 @@ Exports the specified topology as JSON. If the topology does not already exist,
 an outline for a new topology will be exported. The exported JSON
 can be used as the basis for a new topology definition.
 
-If nodes are specified, these will be added into the export in addition
+If nodes are specified, these will be exported in addition
 to any nodes that are in the topology. 
 
-If no topology is specified, all existing topologies in that environment 
-will be exported.
+If no topology is specified, all defined topologies will be exported.
 
 ### Examples:
 The following will export all topologies to a file called 'sys1_test.json'.
@@ -326,7 +326,7 @@ The following will create an outline for a new topology called  'christine_test'
 	$ knife topo export christine_test > christine_test.json
 
 
-## knife topo import 
+## knife topo import <a name="import"></a>
 
 	knife topo import [ TOPOLOGY_FILE [ TOPOLOGY ... ]] 
 
@@ -346,7 +346,7 @@ The following will import the 'test1' topology
 
 	$ knife topo import topology.json test1
 
-## knife topo update
+## knife topo update <a name="update"></a>
 
 	knife topo update [ TOPOLOGY ] 
 
