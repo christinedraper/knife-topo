@@ -1,0 +1,124 @@
+{
+	"name": "test1",
+	"chef_environment": "test2",
+	"tags": 
+	[
+		"testsys2"
+	],
+	"normal": 
+	{
+		"owner": {
+			"name": "Christine Draper2",
+			"email": "christine_draper@thirdwaveinsights.com"
+		},
+		"new_attr": "newval"
+		
+	},
+	"nodes": 
+	[
+		{
+			"name": "appserver01",
+			"ssh_host": "10.0.1.3",
+			"run_list": 
+			[
+				"recipe[apt]",
+				"recipe[testapp::appserver]",
+				"testapp::deploy",
+				"testsys_test1"
+			],
+
+			"normal": 
+			{
+				"topo": 
+				{
+					"node_type": "appserver"
+				}
+			}
+		},
+		{
+			"name": "dbserver01",
+			"ssh_host": "10.0.1.2",
+			"run_list": 
+			[
+				"recipe[apt]",
+				"recipe[testapp::db]",
+				"testsys_test1"
+			],
+
+			"tags": 
+			[
+				"testapp_database"
+			],
+
+			"normal": 
+			{
+				"topo": 
+				{
+					"node_type": "dbserver"
+				}
+			}
+		},
+		{
+			"name": "buildserver01",
+			"chef_environment": "dev2",
+			"run_list": 
+			[
+				"recipe[apt]",
+				"recipe[testapp::db]",
+				"testsys_test1"
+			],
+
+			"tags": 
+			[
+				"build"
+			],
+
+			"normal": 
+			{
+				"topo": 
+				{
+					"node_type": "buildserver2"
+				}
+			}
+		}
+	],
+
+	"cookbook_attributes": 
+	[
+		{
+			"cookbook": "testsys_test1",
+			"filename": "softwareversion",
+			"normal": 
+			{			
+				"nodejs": 
+				{
+					"version": "0.10.28",
+					"checksum_linux_x64": "5f41f4a90861bddaea92addc5dfba5357de40962031c2281b1683277a0f75932"
+				},
+
+				"testapp": 
+				{
+					"version": "0.0.3"
+				},
+
+				"mongodb": 
+				{
+					"package_version": "2.6.1"
+				}
+			},
+			"conditional" : [
+				{
+					"qualifier": "node_type",
+					"value" : "buildserver2",
+					"normal": 
+					{
+						"mongodb": 
+						{
+							"package_version": "2.5.1"
+						}
+					}
+				}
+			]
+		}
+	]
+}

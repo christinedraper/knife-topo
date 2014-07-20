@@ -1,0 +1,47 @@
+{
+	"name": "test1",
+	"nodes": 
+	[
+		{
+			"name": "appserver01",
+			"chef_environment": "test",
+			"run_list": 
+			[
+				"recipe[apt]",
+				"recipe[testapp::appserver]",
+				"testapp::deploy",
+				"testsys_test1"
+			],
+			"tags": 
+			[
+				"testapp"
+			],
+			"normal": 
+			{
+				"topo": 
+				{
+					"node_type": "appserver"
+				}
+			}
+		},
+		{
+			"name": "dbserver01",
+			"run_list": 
+			[
+			],
+			"tags": 
+			[
+			],
+			"normal": 
+			{
+			}
+		},
+		{
+			"name": "buildserver01"
+		}
+	],
+
+	"cookbook_attributes": 
+	[
+	]
+}

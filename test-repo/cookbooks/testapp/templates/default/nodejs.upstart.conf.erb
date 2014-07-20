@@ -1,0 +1,9 @@
+#!upstart
+description "Node.js Application Server"
+
+start on (local-filesystems and net-device-up IFACE!=lo)
+stop on [!12345]
+
+console log
+chdir <%= @app_dir %>
+exec <%= @node_dir %>/bin/node <%= @entry %>

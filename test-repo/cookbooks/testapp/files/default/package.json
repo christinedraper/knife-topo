@@ -1,0 +1,14 @@
+{
+  "name": "testapp",
+  "description": "A dummy application for testing knife-topo",
+  "author": "ThirdWave Insights LLC <contact@thirdwaveinsights.com>",
+  "version": "0.0.1",
+  "private": true,
+  "main": "server.js",
+  "dependencies": {
+    "express": "3.3.4",
+    "ejs": "0.8.4",
+    "connect": "2.8.4"
+  },
+  "engine": "node 0.10.15"
+}
