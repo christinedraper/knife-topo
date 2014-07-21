@@ -48,6 +48,7 @@ class Chef
             export = topo.raw_data
           else
             export = empty_topology
+            export['nodes'].push(empty_node("node1")) if @node_names.length == 0
           end
 
           # merge in data for nodes that user explicitly specified
@@ -78,9 +79,7 @@ class Chef
           "chef_environment" => "_default",
           "tags" => [ ],
           "normal" => { },
-          "nodes" => [
-          "node1" => empty_node("node1")
-          ],
+          "nodes" => [ ],
           "cookbook_attributes" => [{
             "cookbook" =>  @topo_name || "topo1",
             "filename" => "topology"
@@ -115,7 +114,7 @@ class Chef
           
         rescue Net::HTTPServerException => e
           raise unless e.to_s =~ /^404/
-          node = empty_node(node_name)
+          node_data = empty_node(node_name)
         end
         
         node_data
@@ -125,10 +124,10 @@ class Chef
       def merge_node_properties!(nodes, node_name)
         # find out if the node is already in the array
         found = nodes.index{|n| n["name"] == node_name }
-        if found
-          nodes[found] = node_export(node_name)
-        else
+        if found.nil?
           nodes.push(node_export(node_name))
+        else
+          nodes[found] = node_export(node_name)
         end
       end
 
