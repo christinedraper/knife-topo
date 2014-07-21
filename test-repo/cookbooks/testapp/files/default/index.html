@@ -3,11 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-<title>YPO Test Application</title>
+<title>Knife Topo Test Application</title>
 
 </head>
 <body>
-	<p> Welcome ! You can find the knife topo plugin on Github:</p>
-	<a href="https://github.com">https://github.com/thirdwaveinsights/knife-topo</a>
+	<p> Congratulations! You have installed a test application using the knife topo plugin</p>
+	<p> Here are some commands you can run to look at what the plugin did:</p>
+	<ul>
+	<li>knife node list</li>
+	<li>knife node show dbserver01</li>
+	<li>knife node show appserver01</li>
+	<li>knife node show appserver01 -a normal</li>
+	<li>knife data bag show topologies test1</li>
+	<li>cat cookbooks/testapp/attributes/softwareversions.rb</li>
+	</ul>
+	<p>
+	<a href="https://github.com/christinedraper/knife-topo">Go to the knife-topo plugin on Github</a></p>
 </body>
 </html>

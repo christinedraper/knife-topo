@@ -11,38 +11,49 @@ topologies but differences in their configuration details.
 
 # Installation #
 
-Copy the contents of lib/chef/knife into your plugin directory, e.g.:
+[Download the latest knife-topo release](releases/latest), unzip and copy 
+lib/chef/knife into your plugin directory, e.g.:
 
-	$ mkdir -p ~/.chef/knife/plugins
-	$ cp lib/chef/knife/* ~/.chef/knife/plugins
+	$ unzip knife-topo-0.0.6.zip
+	$ cd knife-topo-0.0.6
+	$ mkdir -p ~/.chef/plugins/knife
+	$ cp lib/chef/knife/* ~/.chef/plugins/knife
 
 or install knife-topo as a gem
 
-    $ sudo gem install knife-topo
+    $ gem install knife-topo
 
-This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS.
+You may need to use `sudo gem install knife-topo` instead, depending on your setup.
+
+This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS,
+Windows 7 and Windows 8.1. 
+
+Note: When testing on a Mac, we found knife was not configured to use
+ gems on the gem path. If you encounter this, try the first approach (copy
+the ruby plugin scripts into ~/.chef/plugins/knife).
 
 # Usage #
 
-Define one or more topologies in a [topology file](#topology-file). 
+Define one or more topologies in a [topology file](#topology-file). Import
+that file into your Chef workspace using [knife topo import](#import), 
+then create and bootstrap the nodes
+using a single command [knife topo create](#create). 
+Update the topology file as the configuration changes (e.g., when you 
+need to update software versions), import those changes and run one command
+[knife topo update](#update) to update all of the nodes.
 
-Import the topology file into your local chef repo using
-[knife topo import](#import). Create and optionally
-bootstrap a topology on the Chef server using 
-[knife topo create](#create), and update it
-using [knife topo update](#update).
 
 # Getting Started #
 
-Try out this plugin using a [test repo](test-repo) 
-which you can download from Github or is included in the installed gem. See the 
-[Instructions](Instructions.md) for a
+Try out this plugin using a [test-repo](test-repo) provided with knife-topo.
+[Download the latest knife-topo release](releases/latest) and unzip it, 
+then follow the [Instructions](test-repo/Instructions.md) for a
 demo script, explanation, and troubleshooting.
 
 The instructions assume you have
  [chefDK](http://www.getchef.com/downloads/chef-dk/)
  or equivalent installed and working with Vagrant and VirtualBox, but
- none of these are requirements for this plugin. 
+ none of these are requirements to use the knife-topo plugin. 
 
 # Topology File <a name="topology-file"></a>#
 
@@ -86,8 +97,8 @@ Each topology contains a list of `nodes`.
     {
         "name": "test1",
         ...
-        "nodes": {
-            "buildserver": {
+        "nodes": [
+           {
                 "name": "buildserver01",
                 "ssh_host": "192.168.1.201",
                 "ssh_port": "2224",
@@ -101,11 +112,8 @@ Each topology contains a list of `nodes`.
                 "tags": ["build"]
             },
             ...
-            }
-        }
-    },
-    ...
-    ]}
+        ]
+    }
 ```
 Within `nodes`, the `name` field is the node name that will be used in Chef.
 The fields `chef_environment`, `run_list`, `tags` and the attributes
@@ -277,11 +285,11 @@ topology test1.
 	knife topo create TOPOLOGY
 
 Creates the specified topology in the chef server as an item in the 
-system environment data bag. Creates the chef environment associated
-with the system environment, if it does not already exist. Uploads any
-topology cookbooks. Creates or 
-updates nodes identified in the topology, using information 
-specified in the system environment and for the specific node. 
+topology data bag. Creates the chef environment associated
+with the topology, if it does not already exist. Uploads any
+topology cookbooks. Updates existing nodes based on the topology
+information. New nodes will be created if the bootstrap option is
+specified.
 
 ### Options:
 
@@ -291,7 +299,7 @@ Option        | Description
 ------------  | -----------
 --bootstrap    | Bootstrap the topology (see [topo bootstrap](#bootstrap))
 See [knife bootstrap](http://docs.opscode.com/knife_bootstrap.html)  | Options supported by `knife bootstrap` are passed through to the bootstrap command
---no-upload   | Do not upload topology cookbooks
+--disable-upload   | Do not upload topology cookbooks
 
 ### Examples:
 The following will create the 'test1' topology, and bootstrap it.
@@ -301,7 +309,7 @@ The following will create the 'test1' topology, and bootstrap it.
 The following will create the 'test1' topology but will not bootstrap it 
 or upload topology cookbooks.
 
-$ knife topo create test1 --no-upload
+$ knife topo create test1 --disable-upload
 
 ## knife topo export <a name="export"></a>
 
@@ -330,7 +338,7 @@ The following will create an outline for a new topology called  'christine_test'
 
 	knife topo import [ TOPOLOGY_FILE [ TOPOLOGY ... ]] 
 
-Imports the system environment and topologies from a
+Imports the topologies from a
 [topology file](#Topology File) into the local repo. If no topology
 file is specified, attempts to read from a file called 'topology.json'
 in the current directory. Generates the topology cookbook attribute 
@@ -354,8 +362,14 @@ Updates the specified topology. Creates or updates nodes
 identified in the topology, using information specified in the 
 topology for the specific node. 
 
-If no topology is specified, all existing topologies in that environment 
+If no topology is specified, all existing topologies
 will be updated.
+
+Option        | Description
+------------  | -----------
+--bootstrap    | Bootstrap the topology (see [topo bootstrap](#bootstrap))
+See [knife bootstrap](http://docs.opscode.com/knife_bootstrap.html)  | Options supported by `knife bootstrap` are passed through to the bootstrap command
+--disable-upload   | Do not upload topology cookbooks
 
 ### Examples:
 The following will update the 'test1' topology.

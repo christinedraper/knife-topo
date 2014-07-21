@@ -15,17 +15,15 @@ or install it:
 
 	sudo gem install chef-zero
 
-Copy `test-repo` into a working directory, either downloading it from 
-github or copying it from the installed knife-topo gem. You can use:
 
-	gem env
-
-to get the path to your gems and then
+To obtain the test-repo, [download the latest knife-topo release](releases/latest)
+and unzip it, e.g.
 
 ```
-  cp -R <gem-path>/gems/knife-topo/test-repo ~
-  cd ~/test-repo
+	$ unzip knife-topo-0.0.6.zip ~
+	$ cd ~/knife-topo-0.0.6/test-repo
 ```
+
 
 ## Demo 
 
@@ -48,15 +46,27 @@ In this demo
 
 ### Running the demo
 
-From the test-repo, do the following.  Note: you may be prompted to select the network to bridge to
+From the test-repo, do the following.  Note: you may be prompted to 
+select the network to bridge to.
 
-	vagrant up 
+```
+	$ cd ~/knife-topo-0.0.6/test-repo
+  $	vagrant up 
+```
 
 This will start the virtual machines on a 
 private network using vagrant. Once the virtual machines are created, 
-start chef-zero listening on the same private network:
+start chef-zero listening on the same private network, e.g.:
 
-	chef-zero -H 10.0.1.1
+	/opt/chefdk/embedded/bin/chef-zero -H 10.0.1.1
+  
+You should see something like:
+
+```
+>> Starting Chef Zero (v2.2)...
+>> WEBrick (v1.3.1) on Rack (v1.5) is listening at http://127.0.0.1:8889
+>> Press CTRL+C to stop
+```
 
 In another terminal, in test-repo:
 
@@ -74,7 +84,7 @@ To create and bootstrap the test1 topology:
 
 To check the bootstrap has succeeded, browse to: 
 [http://localhost:3031](http://localhost:3031).
-You should see a "Welcome" message.
+You should see a "Congratulations" message.
 
 You can see the results on the Chef server
 using standard knife commands, for example:
@@ -95,7 +105,7 @@ update the topology with the modified configuration:
 ```  
 
 
-####Troubleshooting
+####Troubleshooting the demo
 
 If you are having trouble with berks (`read server certificate B: 
 certificate verify failed (Faraday::SSLError)`

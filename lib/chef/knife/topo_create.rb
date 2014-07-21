@@ -40,12 +40,12 @@ class Chef
       option :bootstrap,
       :long => "--bootstrap",
       :description => "Whether to bootstrap newly created nodes",
-      :boolean => false
+      :boolean => true
 
-      option :no_upload,
-      :long => "--no-upload",
-      :description => "Do not upload cookbooks",
-      :boolean => false
+      option :disable_upload,
+      :long => "--disable-upload",
+      :description => "Do not upload topo cookbooks",
+      :boolean => true
             
       # Make called command options available
       opts = self.options
@@ -90,7 +90,7 @@ class Chef
 
         # make sure env and cookbooks are in place
         check_chef_env(topo['chef_environment']) if topo['chef_environment']
-        upload_cookbooks(@topo_upload_args) if (!config[:no_upload])  
+        upload_cookbooks(@topo_upload_args) if (!config[:disable_upload])  
 
         # update any existing nodes
         topo_hash = topo.raw_data

@@ -13,8 +13,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/christinedraper/knife-topo"
   spec.license       = "Apache License (2.0)"
   
-  spec.files         = Dir.glob("{lib,test-repo}/**/*") +
-  	Dir.glob("test-repo/.chef/*") +
+  spec.files         = Dir.glob("{lib}/**/*")  +
     ['LICENSE', 'README.md', __FILE__]
   spec.require_paths = ["lib"]
 

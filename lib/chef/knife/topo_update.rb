@@ -34,6 +34,11 @@ class Chef
       :long => "--data-bag DATA_BAG",
       :description => "The data bag the topologies are stored in"
 
+      option :disable_upload,
+      :long => "--disable-upload",
+      :description => "Do not upload topo cookbooks",
+      :boolean => true
+ 
       # Make called command options available
       self.options = Chef::Knife::TopoCookbookUpload.options.merge(self.options)
 
@@ -99,7 +104,7 @@ class Chef
       def update_topo(topo)
         topo.save
         @topo_upload_args[3] = topo['name']
-        upload_cookbooks(@topo_upload_args) if (!config[:no_upload]) 
+        upload_cookbooks(@topo_upload_args) if (!config[:disable_upload]) 
 
         topo_hash = topo.raw_data
         nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
