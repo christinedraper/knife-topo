@@ -119,46 +119,37 @@ class Chef
 
       end
 
-      # Get nodes from the topology, create them and/or set their run lists
-      def create_or_update_nodes(topo)
-
-        topo_hash = topo.raw_data
-        nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
-        config[:disable_editing] = true
-
-        if nodes.length > 0
-         nodes.each do |updates|
-            node_name = updates['name']
-            begin
-              
-              # load then update and save the node
-              node = Chef::Node.load(node_name)
-              
-              if updates['chef_environment'] && updates['chef_environment'] != node['chef_environment']
-                check_chef_env(topo['chef_environment']) 
-              end
-              
-              if updated_values = update_node_with_values(node, updates)
-                ui.info "Updating #{updated_values.join(', ')} on node #{node.name}"
-                node.save
-                ui.output(format_for_display(node)) if config[:print_after]
-              else
-                ui.info "No  updates found for node #{node.name}"
-              end
-
-            rescue Net::HTTPServerException => e
-              raise unless e.to_s =~ /^404/
-              # Create the node
-              node = Chef::Node.new
-              node.name(node_name)
-              update_node_with_values(node, updates)
-              create_object(node)
-            end
+      
+    # Update an existing node
+    def update_node(node_updates)
+    
+      config[:disable_editing] = true
+    
+      node_name = node_updates['name']
+      begin
+        
+        # load then update and save the node
+        node = Chef::Node.load(node_name)
+        
+        if node_updates['chef_environment'] && node_updates['chef_environment'] != node['chef_environment']
+          check_chef_env(node_updates['chef_environment']) 
         end
+        
+        if updated_values = update_node_with_values(node, node_updates)
+          ui.info "Updating #{updated_values.join(', ')} on node #{node.name}"
+          node.save
+          ui.output(format_for_display(node)) if config[:print_after]
         else
-          ui.info "No nodes found for topology #{topo_hash.name}"
+          ui.info "No  updates found for node #{node.name}"
         end
+
+      rescue Net::HTTPServerException => e
+        raise unless e.to_s =~ /^404/
+        # Node has not been created
       end
+      
+      return node
+    end
 
       # Make updates into the original node, returning the list of updated properties.
       def update_node_with_values(node, updates)

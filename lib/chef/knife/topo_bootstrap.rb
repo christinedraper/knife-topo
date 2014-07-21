@@ -89,12 +89,14 @@ class Chef
       # Setup the bootstrap args and run the bootstrap command
       def run_bootstrap(node_data)
         node_name = node_data['name']
+          
         args = @bootstrap_args
         args += ['-N', node_name] if(node_name)
         args += ['-E', node_data['chef_environment']] if(node_data['chef_environment'])
         args[1] = node_data['ssh_host']
         args += [ '--ssh-port', node_data['ssh_port']] if node_data['ssh_port']
         args += [ '--run-list' , node_data['run_list'].join(',')] if node_data['run_list']
+        args += [ '--json-attributes' , node_data['normal'].to_json] if node_data['normal']
 
         ui.info "Bootstrapping node #{node_name}"
         begin

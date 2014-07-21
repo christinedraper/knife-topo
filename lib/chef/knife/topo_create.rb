@@ -91,14 +91,25 @@ class Chef
         # make sure env and cookbooks are in place
         check_chef_env(topo['chef_environment']) if topo['chef_environment']
         upload_cookbooks(@topo_upload_args) if (!config[:no_upload])  
-          
-        # setup the actual nodes on the server
-        create_or_update_nodes(topo)
+
+        # update any existing nodes
+        topo_hash = topo.raw_data
+        nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
+        config[:disable_editing] = true
+        
+        if nodes.length > 0
+          nodes.each do |updates|
+            node_name = updates['name']
+            node = update_node(updates)
+          end
+          # if bootstrap is specified, run the bootstrap command
+          run_cmd(Chef::Knife::TopoBootstrap, @topo_bootstrap_args) if config[:bootstrap]
+        else
+          ui.info "No nodes found for topology #{topo_hash.name}"
+        end
+           
         ui.info("Topology created")
-        
-        # if bootstrap is specified, run the bootstrap command
-        run_cmd(Chef::Knife::TopoBootstrap, @topo_bootstrap_args) if config[:bootstrap]
-        
+              
       end
       
 

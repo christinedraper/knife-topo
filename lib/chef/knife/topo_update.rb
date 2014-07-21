@@ -99,8 +99,21 @@ class Chef
       def update_topo(topo)
         topo.save
         @topo_upload_args[3] = topo['name']
-        upload_cookbooks(@topo_upload_args) if (!config[:no_upload])           
-        create_or_update_nodes(topo)
+        upload_cookbooks(@topo_upload_args) if (!config[:no_upload]) 
+
+        topo_hash = topo.raw_data
+        nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
+        config[:disable_editing] = true
+        
+        if nodes.length > 0
+          nodes.each do |updates|
+            node_name = updates['name']
+            node = update_node(updates)
+            ui.info "Node #{node_name} does not exist - skipping update" if (!node)
+          end
+        else
+          ui.info "No nodes found for topology #{topo_hash.name}"
+        end
       end
 
       include Chef::Knife::TopologyHelper
