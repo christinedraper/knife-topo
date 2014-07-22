@@ -2,10 +2,10 @@ knife topo
 ==========
 
 The Chef knife-topo plugin allows you to create and update topologies 
-consisting of multiple nodes using single knife commands, driven off
-a JSON topology file. This support includes 
+consisting of multiple nodes using single knife commands, based on
+a JSON topology file. The plugin supports generating
 attribute files within a topology-specific cookbook, including
-attributes that vary based on a node property.
+conditional attributes that vary based on a node property.
 
 You may find this plugin useful if you are 
 regularly updating a system consisting of multiple nodes, and would
@@ -42,8 +42,7 @@ the ruby plugin scripts into ~/.chef/plugins/knife).
 
 Define one or more topologies in a [topology file](#topology-file). Import
 that file into your Chef workspace using [knife topo import](#import), 
-then create and bootstrap the nodes
-using a single command [knife topo create](#create). 
+then create and bootstrap the nodes using a single command [knife topo create](#create). 
 Update the topology file as the configuration changes (e.g., when you 
 need to update software versions), import those changes and run one command
 [knife topo update](#update) to update all of the nodes.
@@ -51,13 +50,12 @@ need to update software versions), import those changes and run one command
 
 # Getting Started #
 
-Try out this plugin using a [test-repo](test-repo) provided with knife-topo.
+Try out this plugin using a [test-repo](test-repo) provided in the knife-topo github repository.
 [Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
 and unzip it, then follow the [Instructions](test-repo/Instructions.md) for a
 demo script, explanation, and troubleshooting.
 
-The instructions assume you have
- [chefDK](http://www.getchef.com/downloads/chef-dk/)
+The instructions assume you have [chefDK](http://www.getchef.com/downloads/chef-dk/)
  or equivalent installed and working with Vagrant and VirtualBox, but
  none of these are requirements to use the knife-topo plugin. 
 
@@ -345,7 +343,7 @@ The following will create an outline for a new topology called  'christine_test'
 	knife topo import [ TOPOLOGY_FILE [ TOPOLOGY ... ]] 
 
 Imports the topologies from a
-[topology file](#Topology File) into the local repo. If no topology
+[topology file](#topology-file) into the local repo. If no topology
 file is specified, attempts to read from a file called 'topology.json'
 in the current directory. Generates the topology cookbook attribute 
 files and attributes described in the 'cookbook_attributes' property.

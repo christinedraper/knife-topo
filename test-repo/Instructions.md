@@ -20,8 +20,8 @@ To obtain the test-repo, [download the latest knife-topo release](http://github.
 and unzip it, e.g.
 
 ```
-	$ unzip knife-topo-0.0.6.zip -d ~
-	$ cd ~/knife-topo-0.0.6/test-repo
+unzip knife-topo-0.0.6.zip -d ~
+cd ~/knife-topo-0.0.6/test-repo
 ```
 
 
@@ -51,8 +51,8 @@ From the test-repo, do the following.  Note: you may be prompted to
 select the network to bridge to.
 
 ```
-	cd ~/knife-topo-0.0.6/test-repo
-  vagrant up 
+cd ~/knife-topo-0.0.6/test-repo
+vagrant up 
 ```
 
 You will see Vagrant messages about bootstrapping two machines (dbserver
@@ -69,7 +69,7 @@ This starts the virtual machines on a
 private network using vagrant. Once the virtual machines are created, 
 start chef-zero listening on the same private network, e.g.:
 
-	/opt/chefdk/embedded/bin/chef-zero -H 10.0.1.1
+  /opt/chefdk/embedded/bin/chef-zero -H 10.0.1.1
   
 You should see something like:
 
@@ -82,24 +82,24 @@ You should see something like:
 In another terminal, in test-repo:
 
 ```
-  cd ~/knife-topo-0.0.6/test-repo
-	berks install
-	berks upload
+cd ~/knife-topo-0.0.6/test-repo
+berks install
+berks upload
 ```
 
 You should see messages such as:
 
 ```
-  Fetching 'testapp' from source at cookbooks/testapp
-  Fetching cookbook index from https://api.berkshelf.com...
-  ... more messages...
-  Uploaded yum (3.2.2) to: 'http://10.0.1.1:8889/'
-  Uploaded yum-epel (0.3.6) to: 'http://10.0.1.1:8889/'
+Fetching 'testapp' from source at cookbooks/testapp
+Fetching cookbook index from https://api.berkshelf.com...
+... more messages...
+Uploaded yum (3.2.2) to: 'http://10.0.1.1:8889/'
+Uploaded yum-epel (0.3.6) to: 'http://10.0.1.1:8889/'
 ```
 
 To import the topology.json file into your workspace:
 
-	knife topo import 
+  knife topo import 
   
 You should see output like:
 
@@ -112,20 +112,20 @@ You should see output like:
 Import finished
 ```
 
-The command has created a topology data bag and cookbook 
-in your local workspace.
+The \knife topo import` command has created a topology data bag and cookbook 
+in your local workspace. To see these files:
 
   cat data_bags/topologies/test1.json
   
 will show you the data bag item for topology test1 and
 
-  cat cookbooks/testsys_test1/attributes/softwareversions.rb
+  cat cookbooks/testsys_test1/attributes/softwareversion.rb
 
 will show you the generated topology cookbook attributes.
 
 To create and bootstrap the test1 topology:
 
-    knife topo create test1 --bootstrap -x vagrant -P vagrant --sudo
+  knife topo create test1 --bootstrap -x vagrant -P vagrant --sudo
 
 You should see output like:
 
@@ -152,18 +152,18 @@ You can see the results of the plugin on the Chef server using
 standard knife commands, for example:
 
 ```
-  knife node list
-  knife node show appserver01
-  knife node show appserver01 -a normal
-  knife data bag show topologies test1
+knife node list
+knife node show appserver01
+knife node show appserver01 -a normal
+knife data bag show topologies test1
 ```
   
 You can also try your own modifications to the topologies.json file. To
 update the topology with the modified configuration:
 
 ```
-  knife topo import your_topology.json
-  knife topo update test1
+knife topo import your_topology.json
+knife topo update test1
 ```  
 
 
