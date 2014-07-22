@@ -1,6 +1,7 @@
 ##Setup
 
-Assumptions for this demo: chefDK, Vagrant, VirtualBox and chef-zero
+This example assumes you have chefDK, Vagrant, VirtualBox and chef-zero.
+You can download the first three from the following links:
 
 * [chefDK](http://www.getchef.com/downloads/chef-dk/)
 
@@ -8,7 +9,7 @@ Assumptions for this demo: chefDK, Vagrant, VirtualBox and chef-zero
 
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
 
-If you have chefDK installed, you can use the embedded chef-zero  at 
+You can use the embedded chef-zero embedded in chefDK at
 `/opt/chefdk/embedded/bin/chef-zero`
 
 or install standalone chef-zero:
@@ -16,7 +17,7 @@ or install standalone chef-zero:
 	sudo gem install chef-zero
 
 
-To obtain the test-repo, [download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
+To obtain the sample test-repo, [download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
 and unzip it, e.g.
 
 ```
@@ -25,9 +26,9 @@ cd ~/knife-topo-0.0.6/test-repo
 ```
 
 
-## Demo 
+## Example
 
-This demo will create and bootstrap two nodes in a topology called test1,
+This example will create and bootstrap two nodes in a topology called test1,
 and configure them with specific versions of software:
 
 * an application server with version of nodejs (0.10.28), running
@@ -45,7 +46,7 @@ defining a node that:
 * Requires a different version of software (mongodb) compared to other nodes
  
 
-### Running the demo
+### Instructions
 
 From the test-repo, do the following.  Note: you may be prompted to 
 select the network to bridge to.
@@ -167,7 +168,7 @@ knife topo update test1
 ```  
 
 
-####Troubleshooting the demo
+####Troubleshooting the example
 
 If you are having trouble with berks (`read server certificate B: 
 certificate verify failed (Faraday::SSLError)`

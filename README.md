@@ -54,8 +54,7 @@ need to update software versions), import those changes and run one command
 
 Try out this plugin using a [test-repo](test-repo) provided in the knife-topo github repository.
 [Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
-and unzip it, then follow the [Instructions](test-repo/Instructions.md) for a
-demo script, explanation, and troubleshooting.
+and unzip it, then follow the [Instructions](test-repo/Instructions.md) for the example.
 
 The instructions assume you have [chefDK](http://www.getchef.com/downloads/chef-dk/)
  or equivalent installed and working with Vagrant and VirtualBox, but
