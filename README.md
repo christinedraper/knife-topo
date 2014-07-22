@@ -1,15 +1,17 @@
 knife topo
 ==========
 
-The Chef knife-topo plugin allows you to create and update topologies 
+The knife-topo plugin allows you to create and update topologies 
 consisting of multiple nodes using single knife commands, based on
-a JSON topology file. The plugin supports generating
-attribute files within a topology-specific cookbook, including
-conditional attributes that vary based on a node property.
+a JSON definition of the topology. The plugin:
+* creates a data bag for the topology
+* generates attribute file(s) in a topology-specific cookbook
+* sets and updates the run list, chef environment and properties of nodes
+* uploads the topology-specific cookbook and bootstraps nodes
 
 You may find this plugin useful if you are 
 regularly updating a system consisting of multiple nodes, and would
-like to manage its dynamic configuration (like software versions) 
+like to manage its dynamic configuration (e.g. changing software versions) 
 through a single (json) configuration file. It may also be useful
 if you are regularly bringing up multi-node systems with similar 
 topologies but differences in their configuration details.
