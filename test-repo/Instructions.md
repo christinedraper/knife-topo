@@ -9,40 +9,41 @@ Assumptions for this demo: chefDK, Vagrant, VirtualBox and chef-zero
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
 
 If you have chefDK installed, you can use the embedded chef-zero  at 
-/opt/chefdk/embedded/bin/chef-zero
+`/opt/chefdk/embedded/bin/chef-zero`
 
-or install it:
+or install standalone chef-zero:
 
 	sudo gem install chef-zero
 
 
-To obtain the test-repo, [download the latest knife-topo release](releases/latest)
+To obtain the test-repo, [download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
 and unzip it, e.g.
 
 ```
-	$ unzip knife-topo-0.0.6.zip ~
+	$ unzip knife-topo-0.0.6.zip -d ~
 	$ cd ~/knife-topo-0.0.6/test-repo
 ```
 
 
 ## Demo 
 
-This demo will create and bootstrap two nodes in a topology called test1:
+This demo will create and bootstrap two nodes in a topology called test1,
+and configure them with specific versions of software:
 
-* an application server with a specific version of nodejs (0.10.28), running
+* an application server with version of nodejs (0.10.28), running
 a test application
-* a database server with a specific version of  mongodb (2.6.1)
+* a database server with version of  mongodb (2.6.1)
 
 Each node in the topology will be tagged with 'testsys' and will 
 have an 'owner' and 'node_type' normal attribute.
  
-The test1 topology will also contain a third node called buildserver01, 
-which is created but not bootstrapped. This node:
+The test1 topology will also defines a third node called buildserver01, 
+which is not bootstrapped. This node is included to illustrate 
+defining a node that:
 
-* Is in a different chef environment ('dev')
-* Requires a different version of mongodb
+* Is in a different chef environment compared to other nodes
+* Requires a different version of software (mongodb) compared to other nodes
  
-In this demo
 
 ### Running the demo
 
@@ -50,11 +51,21 @@ From the test-repo, do the following.  Note: you may be prompted to
 select the network to bridge to.
 
 ```
-	$ cd ~/knife-topo-0.0.6/test-repo
-  $	vagrant up 
+	cd ~/knife-topo-0.0.6/test-repo
+  vagrant up 
 ```
 
-This will start the virtual machines on a 
+You will see Vagrant messages about bootstrapping two machines (dbserver
+and appserver), ending with something like:
+
+```
+==> appserver: Setting hostname...
+==> appserver: Configuring and enabling network interfaces...
+==> appserver: Mounting shared folders...
+    appserver: /vagrant => /home/christine/knife-topo-0.0.6/test-repo
+```
+
+This starts the virtual machines on a 
 private network using vagrant. Once the virtual machines are created, 
 start chef-zero listening on the same private network, e.g.:
 
@@ -71,23 +82,74 @@ You should see something like:
 In another terminal, in test-repo:
 
 ```
+  cd ~/knife-topo-0.0.6/test-repo
 	berks install
 	berks upload
 ```
 
+You should see messages such as:
+
+```
+  Fetching 'testapp' from source at cookbooks/testapp
+  Fetching cookbook index from https://api.berkshelf.com...
+  ... more messages...
+  Uploaded yum (3.2.2) to: 'http://10.0.1.1:8889/'
+  Uploaded yum-epel (0.3.6) to: 'http://10.0.1.1:8889/'
+```
+
+To import the topology.json file into your workspace:
+
+	knife topo import 
+  
+You should see output like:
+
+```
+** Creating cookbook testsys_test1
+** Creating README for cookbook: testsys_test1
+** Creating CHANGELOG for cookbook: testsys_test1
+** Creating metadata for cookbook: testsys_test1
+** Creating attribute file softwareversion.rb
+Import finished
+```
+
+The command has created a topology data bag and cookbook 
+in your local workspace.
+
+  cat data_bags/topologies/test1.json
+  
+will show you the data bag item for topology test1 and
+
+  cat cookbooks/testsys_test1/attributes/softwareversions.rb
+
+will show you the generated topology cookbook attributes.
+
 To create and bootstrap the test1 topology:
 
+    knife topo create test1 --bootstrap -x vagrant -P vagrant --sudo
+
+You should see output like:
+
 ```
-	knife topo import topology.json
-	knife topo create test1 --bootstrap -x vagrant -P vagrant --sudo
+Created topology data bag [topologies]
+Creating chef environment test
+Uploading testsys_test1  [0.1.0]
+Uploaded 1 cookbook.
+Bootstrapping node appserver01
+... messages from knife bootstrap...
+Bootstrapping node dbserver01
+... more messages from knife bootstrap...
+ Chef Client finished, 18/23 resources updated in 260.75631942 seconds
+Node buildserver01 does not have ssh_host specified - skipping bootstrap
+Bootstrapped 2 nodes and skipped 1 nodes of 3 in topology topologies/test1
+Topology created
 ```
 
-To check the bootstrap has succeeded, browse to: 
+To confirm that the bootstrap has succeeded, browse to: 
 [http://localhost:3031](http://localhost:3031).
 You should see a "Congratulations" message.
 
-You can see the results on the Chef server
-using standard knife commands, for example:
+You can see the results of the plugin on the Chef server using 
+standard knife commands, for example:
 
 ```
   knife node list
@@ -96,7 +158,7 @@ using standard knife commands, for example:
   knife data bag show topologies test1
 ```
   
-You can try your own modifications to the topologies.json file. To
+You can also try your own modifications to the topologies.json file. To
 update the topology with the modified configuration:
 
 ```

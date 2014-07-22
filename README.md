@@ -1,21 +1,27 @@
 knife topo
 ==========
 
-This Chef Knife plugin allows you to create and update topologies 
-consisting of multiple nodes. You may find it useful if you are 
+The Chef knife-topo plugin allows you to create and update topologies 
+consisting of multiple nodes using single knife commands, driven off
+a JSON topology file. This support includes 
+attribute files within a topology-specific cookbook, including
+attributes that vary based on a node property.
+
+You may find this plugin useful if you are 
 regularly updating a system consisting of multiple nodes, and would
 like to manage its dynamic configuration (like software versions) 
 through a single (json) configuration file. It may also be useful
 if you are regularly bringing up multi-node systems with similar 
 topologies but differences in their configuration details.
 
+
 # Installation #
 
-[Download the latest knife-topo release](releases/latest), unzip and copy 
-lib/chef/knife into your plugin directory, e.g.:
+[Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest), 
+unzip and copy `lib/chef/knife` into your plugin directory, e.g.:
 
-	$ unzip knife-topo-0.0.6.zip
-	$ cd knife-topo-0.0.6
+	$ unzip knife-topo-0.0.6.zip -d ~
+	$ cd ~/knife-topo-0.0.6
 	$ mkdir -p ~/.chef/plugins/knife
 	$ cp lib/chef/knife/* ~/.chef/plugins/knife
 
@@ -23,13 +29,13 @@ or install knife-topo as a gem
 
     $ gem install knife-topo
 
-You may need to use `sudo gem install knife-topo` instead, depending on your setup.
+You may need to use `sudo gem install knife-topo`, depending on your setup.
 
-This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS,
-Windows 7 and Windows 8.1. 
+This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS. 
 
-Note: When testing on a Mac, we found knife was not configured to use
- gems on the gem path. If you encounter this, try the first approach (copy
+Note: I've encountered a case (on a Mac) where knife was not configured to use
+ gems on the gem path. If the gem install succeeds but `knife topo`
+ is not a recognized knife command, try the first approach (copy
 the ruby plugin scripts into ~/.chef/plugins/knife).
 
 # Usage #
@@ -46,8 +52,8 @@ need to update software versions), import those changes and run one command
 # Getting Started #
 
 Try out this plugin using a [test-repo](test-repo) provided with knife-topo.
-[Download the latest knife-topo release](releases/latest) and unzip it, 
-then follow the [Instructions](test-repo/Instructions.md) for a
+[Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
+and unzip it, then follow the [Instructions](test-repo/Instructions.md) for a
 demo script, explanation, and troubleshooting.
 
 The instructions assume you have
