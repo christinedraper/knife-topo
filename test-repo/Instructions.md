@@ -14,8 +14,9 @@ You can use the embedded chef-zero embedded in chefDK at
 
 or install standalone chef-zero:
 
+```
 	sudo gem install chef-zero
-
+```
 
 To obtain the sample test-repo, [download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
 and unzip it, e.g.
@@ -100,8 +101,10 @@ Uploaded yum-epel (0.3.6) to: 'http://10.0.1.1:8889/'
 
 To import the topology.json file into your workspace:
 
+```
   knife topo import 
-  
+```
+
 You should see output like:
 
 ```
@@ -116,17 +119,23 @@ Import finished
 The \knife topo import` command has created a topology data bag and cookbook 
 in your local workspace. To see these files:
 
+```
   cat data_bags/topologies/test1.json
-  
+```
+
 will show you the data bag item for topology test1 and
 
+```
   cat cookbooks/testsys_test1/attributes/softwareversion.rb
+```
 
 will show you the generated topology cookbook attributes.
 
 To create and bootstrap the test1 topology:
 
+```
   knife topo create test1 --bootstrap -x vagrant -P vagrant --sudo
+```
 
 You should see output like:
 
@@ -176,7 +185,13 @@ try following the instructions
 [here](https://gist.github.com/fnichol/867550#the-manual-way-boring) 
 to add CA certificates for OpenSSL
 
-If the bootstrap fails with 'ERROR: 412 "Precondition Failed"', make sure
+If the `knife topo create` fails with `Data Bag items must have an id matching /^[\.\-[:alnum:]_]+$/, you gave: nil`
+ then check that you do not have a file with the same name as the
+ topology (e.g. test1.json)in the current directory. Knife will try
+ to load a data bag item from the current directory BEFORE it reads
+ from the data bag directory.
+
+If the `knife topo create` fails with 'ERROR: 412 "Precondition Failed"', make sure
 you have run `berks upload` since you started chef-zero.
 
 I encountered some problems getting chef-zero to run on a private network
@@ -196,7 +211,9 @@ in the current cookbook which has been fixed but
 not released (as of 19 July 2014). Run the following to remove the
 installed mongodb and then retry the knife topo bootstrap:
 
+```
   vagrant ssh dbserver -c 'sudo apt-get remove mongodb'
+```
 
 If you have changed the nodejs version, you need to also change the
 SHA256 checksum. This can be found at
