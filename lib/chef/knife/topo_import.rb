@@ -63,6 +63,11 @@ class Chef
         
           topo_name = topo_data['name'] || topo_data['id']
           topo_data['id'] ||= topo_name
+            
+          if (!topo_name)
+            ui.error "Could not find a topology name - #{topo_file} does not appear to be a valid topology JSON file"
+            exit(1)
+          end
           
           # check against specific topology list
           if topo_names

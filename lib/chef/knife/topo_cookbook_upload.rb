@@ -65,7 +65,7 @@ class Chef
         end
         
         # Run cookbook upload command on the topology cookbooks
-        if topo['cookbook_attributes'].length > 0
+        if topo['cookbook_attributes'] && topo['cookbook_attributes'].length > 0
           argPos = 2
           topo['cookbook_attributes'].each do |entry|
             @topo_upload_args[argPos] = entry['cookbook']
@@ -73,7 +73,7 @@ class Chef
           end
           run_cmd(Chef::Knife::CookbookUpload, @topo_upload_args)
         else
-          ui.info("No cookbooks found for topology #{topo_name}.")
+          ui.info("No cookbooks found for topology #{topo_name}")
         end                      
       end
 

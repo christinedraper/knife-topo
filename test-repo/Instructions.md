@@ -22,8 +22,8 @@ To obtain the sample test-repo, [download the latest knife-topo release](http://
 and unzip it, e.g.
 
 ```
-unzip knife-topo-0.0.6.zip -d ~
-cd ~/knife-topo-0.0.6/test-repo
+unzip knife-topo-0.0.7.zip -d ~
+cd ~/knife-topo-0.0.7/test-repo
 ```
 
 
@@ -53,7 +53,7 @@ From the test-repo, do the following.  Note: you may be prompted to
 select the network to bridge to.
 
 ```
-cd ~/knife-topo-0.0.6/test-repo
+cd ~/knife-topo-0.0.7/test-repo
 vagrant up 
 ```
 
@@ -64,7 +64,7 @@ and appserver), ending with something like:
 ==> appserver: Setting hostname...
 ==> appserver: Configuring and enabling network interfaces...
 ==> appserver: Mounting shared folders...
-    appserver: /vagrant => /home/christine/knife-topo-0.0.6/test-repo
+    appserver: /vagrant => /home/christine/knife-topo-0.0.7/test-repo
 ```
 
 This starts the virtual machines on a 
@@ -84,7 +84,7 @@ You should see something like:
 In another terminal, in test-repo:
 
 ```
-cd ~/knife-topo-0.0.6/test-repo
+cd ~/knife-topo-0.0.7/test-repo
 berks install
 berks upload
 ```

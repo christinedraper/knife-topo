@@ -22,8 +22,8 @@ topologies but differences in their configuration details.
 [Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest), 
 unzip and copy `lib/chef/knife` into your plugin directory, e.g.:
 
-	$ unzip knife-topo-0.0.6.zip -d ~
-	$ cd ~/knife-topo-0.0.6
+	$ unzip knife-topo-0.0.7.zip -d ~
+	$ cd ~/knife-topo-0.0.7
 	$ mkdir -p ~/.chef/plugins/knife
 	$ cp lib/chef/knife/* ~/.chef/plugins/knife
 

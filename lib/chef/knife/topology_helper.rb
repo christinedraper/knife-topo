@@ -99,7 +99,7 @@ class Chef
       def merge_topo_properties(nodes, topo_hash)
 
         if nodes && nodes.length > 0
-          merged_nodes = nodes ? nodes.clone : {}
+          merged_nodes = nodes ? nodes.clone : []
           merged_nodes.each do |nodeprops|
 
             normal_defaults = topo_hash['normal'] ? topo_hash['normal'].clone : {}

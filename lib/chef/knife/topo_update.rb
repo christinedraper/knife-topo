@@ -110,14 +110,14 @@ class Chef
         nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
         config[:disable_editing] = true
         
-        if nodes.length > 0
+        if nodes && nodes.length > 0
           nodes.each do |updates|
             node_name = updates['name']
             node = update_node(updates)
             ui.info "Node #{node_name} does not exist - skipping update" if (!node)
           end
         else
-          ui.info "No nodes found for topology #{topo_hash.name}"
+          ui.info "No nodes found for topology #{topo_hash['name']}"
         end
       end
 
