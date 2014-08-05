@@ -75,14 +75,14 @@ class Chef
 
         # create the topology cookbooks
         attribute_cookbooks = topo['cookbook_attributes']
-        @failed = []
-        succeeded = 0
+        cookbook_names = []
         if attribute_cookbooks && attribute_cookbooks.length > 0
           attribute_cookbooks.each do |cookbook_spec|
-            run_create_cookbook(cookbook_spec['cookbook'])
-            create_attr_file(@cookbook_path, cookbook_spec['cookbook'],
+            cookbook_name = cookbook_spec['cookbook']
+            run_create_cookbook(cookbook_name) unless cookbook_names.include?(cookbook_name)
+            cookbook_names << cookbook_name
+            create_attr_file(@cookbook_path, cookbook_name,
             cookbook_spec['filename'] + ".rb", cookbook_spec)
-            succeeded += 1
           end
         else
           ui.info "No cookbook attributes found for topology #{@topo_name}"
@@ -99,7 +99,6 @@ class Chef
           command = run_cmd(Chef::Knife::CookbookCreate, @cookbook_create_args)
         rescue Exception => e
           raise if Chef::Config[:verbosity] == 2
-          @failed << cookbook_name
           ui.warn "create of cookbook #{cookbook_name} exited with error"
           humanize_exception(e)
         end

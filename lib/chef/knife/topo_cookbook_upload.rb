@@ -65,10 +65,13 @@ class Chef
         end
         
         # Run cookbook upload command on the topology cookbooks
+        cookbook_names = []
         if topo['cookbook_attributes'] && topo['cookbook_attributes'].length > 0
           argPos = 2
           topo['cookbook_attributes'].each do |entry|
-            @topo_upload_args[argPos] = entry['cookbook']
+            cookbook_name = entry['cookbook']
+            @topo_upload_args[argPos] = cookbook_name unless cookbook_names.include?(cookbook_name)
+            cookbook_names << cookbook_name  
             argPos += 1
           end
           run_cmd(Chef::Knife::CookbookUpload, @topo_upload_args)
