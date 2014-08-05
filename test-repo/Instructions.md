@@ -185,14 +185,20 @@ try following the instructions
 [here](https://gist.github.com/fnichol/867550#the-manual-way-boring) 
 to add CA certificates for OpenSSL
 
-If the `knife topo create` fails with `Data Bag items must have an id matching /^[\.\-[:alnum:]_]+$/, you gave: nil`
+If `knife topo create` fails with `Data Bag items must have an id matching /^[\.\-[:alnum:]_]+$/, you gave: nil`
  then check that you do not have a file with the same name as the
  topology (e.g. test1.json)in the current directory. Knife will try
  to load a data bag item from the current directory BEFORE it reads
  from the data bag directory.
 
-If the `knife topo create` fails with 'ERROR: 412 "Precondition Failed"', make sure
+If `knife topo create` fails with 'ERROR: 412 "Precondition Failed"', make sure
 you have run `berks upload` since you started chef-zero.
+
+If `knife topo create` fails with a 404 error from ark[nodejs-binary],
+make sure you have the most recent knife-topo test-repo, where
+the testapp cookbook has depends 'nodejs','~>1.3' in its metadata.
+This problem was caused by the significant change in the 2.0 version of
+the nodejs cookbook.
 
 I encountered some problems getting chef-zero to run on a private network
 on Windows 8.1 (it responded really really slowly). 
