@@ -63,16 +63,20 @@ The instructions assume you have [chefDK](http://www.getchef.com/downloads/chef-
  If you're the sort of person who just wants to jump in and try it, here's some hints.
  
 Generate a topology file for a topology called test1 from existing nodes node1 and node2:
- 	knife topo export test1 node1 node2 > topology.json
+
+	knife topo export test1 node1 node2 > topology.json
 
 Import a topology json file, generating all of the necessary artifacts in your workspace:
+
 	knife topo import topology1.json
 
 Create the topology using existing nodes:
+
 	knife topo create test1
 	
 Create the topology bootstrapping new nodes in vagrant (you will need to add the 
 host details for bootstrap to the file before importing):
+
 	knife topo create test1 --bootstrap -xvagrant -Pvagrant --sudo 
 
 # Topology File <a name="topology-file"></a>#
