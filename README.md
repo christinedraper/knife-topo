@@ -59,6 +59,21 @@ and unzip it, then follow the [Instructions](test-repo/Instructions.md) for the 
 The instructions assume you have [chefDK](http://www.getchef.com/downloads/chef-dk/)
  or equivalent installed and working with Vagrant and VirtualBox, but
  none of these are requirements to use the knife-topo plugin. 
+ 
+ If you're the sort of person who just wants to jump in and try it, here's some hints.
+ 
+Generate a topology file for a topology called test1 from existing nodes node1 and node2:
+ 	knife topo export test1 node1 node2 > topology.json
+
+Import a topology json file, generating all of the necessary artifacts in your workspace:
+	knife topo import topology1.json
+
+Create the topology using existing nodes:
+	knife topo create test1
+	
+Create the topology bootstrapping new nodes in vagrant (you will need to add the 
+host details for bootstrap to the file before importing):
+	knife topo create test1 --bootstrap -xvagrant -Pvagrant --sudo 
 
 # Topology File <a name="topology-file"></a>#
 
@@ -240,7 +255,7 @@ See [knife bootstrap](http://docs.opscode.com/knife_bootstrap.html)  | Options s
 The following will bootstrap nodes in the test1 topology, using a
 user name of vagrant, password of vagrant, and running using sudo.
 
-	$ knife topo bootstrap sys1_test test1 -x vagrant -P vagrant --sudo
+	$ knife topo bootstrap test1 -x vagrant -P vagrant --sudo
 
 ## knife topo cookbook create <a name="cookbook-create"></a>
 
