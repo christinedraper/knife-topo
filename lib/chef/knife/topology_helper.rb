@@ -191,8 +191,10 @@ class Chef
 
       # Load a topology from local data bag item file
       def load_from_file(bag_name, topo_name)
-        return unless topo_file = loader.find_file("#{topologies_path}", bag_name, topo_name + '.json')
-
+        
+        topo_file = File.join(Dir.pwd, "#{topologies_path}", bag_name, topo_name + '.json')
+        return unless (loader.file_exists_and_is_readable?(topo_file))
+ 
         item_data = loader.object_from_file(topo_file)
         item_data = if use_encryption
           secret = read_secret
