@@ -22,8 +22,8 @@ topologies but differences in their configuration details.
 [Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest), 
 unzip and copy `lib/chef/knife` into your plugin directory, e.g.:
 
-	$ unzip knife-topo-0.0.7.zip -d ~
-	$ cd ~/knife-topo-0.0.7
+	$ unzip knife-topo-0.0.9.zip -d ~
+	$ cd ~/knife-topo-0.0.9
 	$ mkdir -p ~/.chef/plugins/knife
 	$ cp lib/chef/knife/* ~/.chef/plugins/knife
 
@@ -33,7 +33,7 @@ or install knife-topo as a gem
 
 You may need to use `sudo gem install knife-topo`, depending on your setup.
 
-This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS. 
+This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS, and run on Windows and Mac.
 
 Note: I've encountered a case (on a Mac) where knife was not configured to use
  gems on the gem path. If the gem install succeeds but `knife topo`
@@ -348,10 +348,24 @@ to any nodes that are in the topology.
 
 If no topology is specified, all defined topologies will be exported.
 
-### Examples:
-The following will export all topologies to a file called 'sys1_test.json'.
+### Options:
 
-	$ knife topo export sys1_test > sys1_test.json
+The knife topo export subcommand supports the following additional options.
+
+Option        | Description
+------------  | -----------
+--min-priority    | Only export attributes with a priority equal or above this priority.
+
+### Examples:
+
+The following will export the data for nodes n1 and n2 as part of a topology called  'new_topo':
+
+	$ knife topo export new_topo n1 n2 > new_topo.json
+	
+	
+The following will export all topologies to a file called 'all_topos.json'.
+
+	$ knife topo export  > all_topos.json
 	
 The following will create an outline for a new topology called  'christine_test':
 

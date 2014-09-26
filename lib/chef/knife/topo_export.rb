@@ -20,7 +20,7 @@ require 'chef/knife'
 
 require_relative 'topology_helper'
 
-# NOTE: This command exports to stdout - do not add ui messages (other than fatal) to this command
+# NOTE: This command exports to stdout 
 
 class Chef
   class Knife
@@ -35,6 +35,11 @@ class Chef
       :short => '-D DATA_BAG',
       :long => "--data-bag DATA_BAG",
       :description => "The data bag the topologies are stored in"
+      
+      option :min_priority,
+      :long => "--min-priority PRIORITY",
+      :default => "default",
+      :description => "Export attributes with this priority or above"
 
       def run
 
@@ -42,6 +47,10 @@ class Chef
 
         @topo_name = @name_args[0]
         @node_names = @name_args[1..-1]
+        
+        unless ['default', 'normal', 'override'].include?(config[:min_priority])
+          ui.warn("--min-priority should be one of 'default', 'normal' or 'override'")
+        end
         
         if @topo_name
           if topo = load_from_server(@bag_name, @topo_name)
@@ -78,7 +87,6 @@ class Chef
           "name" => @topo_name || "topo1",
           "chef_environment" => "_default",
           "tags" => [ ],
-          "normal" => { },
           "nodes" => [ ],
           "cookbook_attributes" => [{
             "cookbook" =>  @topo_name || "topo1",
@@ -109,8 +117,12 @@ class Chef
           node_data['name'] = node.name
           node_data['tags'] = node.tags
           node_data['chef_environment'] = node.chef_environment
-          node_data['normal'] = node.normal
           node_data['run_list'] = node.run_list
+
+          pri = config[:min_priority]
+          node_data['default'] = node.default if pri == "default"
+          node_data['normal'] = node.normal if pri == "default" || pri == "normal"
+          node_data['override'] = node.override
           
         rescue Net::HTTPServerException => e
           raise unless e.to_s =~ /^404/
