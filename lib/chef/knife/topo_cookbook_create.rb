@@ -132,7 +132,8 @@ class Chef
                 print_attr(file, "#{lhs}['#{key}']", value2)
               end                           
             else
-              file.write "#{lhs} = \"#{value1}\"\n"
+              rubyString = (value1 == nil) ? "nil" : Chef::JSONCompat.to_json(value1);
+              file.write "#{lhs} = " + rubyString + " \n"
             end
           end
           
