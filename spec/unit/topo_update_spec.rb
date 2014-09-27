@@ -28,7 +28,7 @@ require 'chef/knife/topo_update'
 describe Chef::Knife::TopoUpdate do
   before :each do
     Chef::Config[:node_name]  = "christine_test"
-    @cmd = Chef::Knife::TopoUpdate.new
+    @cmd = Chef::Knife::TopoUpdate.new([ 'knife', 'topo', 'update', 'topo1' ])
 
     # setup test data bags
     @topobag_name = 'testsys_test'
@@ -37,31 +37,34 @@ describe Chef::Knife::TopoUpdate do
 
     @topo1_origdata = {
       "id" => "topo1",
-      "nodes" => {
-      "node1" => {
+      "name" => "topo1",
+      "nodes" => [
+      {
       "name" => "node1"
       },
-      "node2" => {
+      {
       "name" => "node2",
-      "chef_environment" => "dev",
+      "chef_environment" => "test",
       "normal" => { "anotherAttr" => "anotherValue" }
-      }}
+      }]
     }
     @topo1_newdata = {
       "id" => "topo1",
-      "nodes" => {
-      "node1" => {
+      "nodes" => [
+      {
       "name" => "node1",
       "run_list" => [ 'recipe[apt]', 'role[ypo::db]'  ]
       },
-      "node2" => {
+      {
       "name" => "node2",
       "chef_environment" => "dev",
       "normal" => { "anotherAttr" => "newValue" }
-      }}
+      }]
     }
 
     @orig_item = Chef::DataBagItem.new
+    @orig_item.raw_data = @topo1_origdata
+    @orig_item.data_bag(@topobag_name)
     @topo1_item = Chef::DataBagItem.new
     @topo1_item.raw_data = @topo1_newdata
     @topo1_item.data_bag(@topobag_name)
@@ -81,20 +84,23 @@ describe Chef::Knife::TopoUpdate do
 
       expect(@topo1_item).to receive(:save)
 
-      expect(@cmd).to receive(:create_or_update_nodes).with(@topo1_item)
+      expect(@cmd).to receive(:update_node).with(@topo1_newdata['nodes'][0])
+      expect(@cmd).to receive(:update_node).with(@topo1_newdata['nodes'][1])
 
       @cmd.run
 
     end
   end
 
-  describe "#create_or_update_nodes" do
-    it "updates two nodes" do
+  describe "#update_node" do
+    it "updates an existing node" do
 
-      expect(Chef::Node).to receive(:load).and_raise(@exception_404).twice
-      expect(@cmd).to receive(:create_object).with(kind_of(Chef::Node)).twice
-
-      @cmd.create_or_update_nodes(@topo1_item)
+      node = Chef::Node.new
+      expect(Chef::Node).to receive(:load).and_return(node)
+      expect(node).to receive(:save)
+      expect(@cmd).to receive(:check_chef_env).with("dev")
+      
+      @cmd.update_node(@topo1_newdata['nodes'][1])
 
     end
   end

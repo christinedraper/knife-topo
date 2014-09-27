@@ -18,6 +18,7 @@
 
 require 'chef/data_bag'
 require 'chef/encrypted_data_bag_item'
+require 'chef/environment'
 require 'chef/knife/core/object_loader'
 
 class Chef

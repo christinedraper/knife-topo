@@ -22,13 +22,14 @@ require 'rspec'
 require 'rspec/mocks'
 require File.expand_path('../../spec_helper', __FILE__)
 require 'chef/knife/topo_create'
+require 'chef/node'
 
 #Chef::Knife::TopoCreate.load_deps
 
 describe Chef::Knife::TopoCreate do
   before :each do
     Chef::Config[:node_name]  = "christine_test"
-    @cmd = Chef::Knife::TopoCreate.new
+    @cmd = Chef::Knife::TopoCreate.new(  [ 'topo1' ] )
 
     # setup test data bags
     @tmp_dir = Dir.mktmpdir
@@ -43,16 +44,16 @@ describe Chef::Knife::TopoCreate do
       "chef_environment" => "test",
       "tags" => [ "topo_tag" ],
       "normal" => { "anAttr" => "aValue" },
-      "nodes" => {
-      "node1" => {
+      "nodes" => [
+      {
       "name" => "node1"
       },
-      "node2" => {
+      {
       "name" => "node2",
       "chef_environment" => "dev",
       "normal" => { "anotherAttr" => "anotherValue" },
       "tags" => [ "topo_tag", "second_tag" ]
-      }}
+      }]
     }
     @merged_data = {
       "id" => "topo1",
@@ -60,8 +61,8 @@ describe Chef::Knife::TopoCreate do
       "chef_environment" => "test",
       "tags" => [ "topo_tag" ],
       "normal" => { "anAttr" => "aValue" },
-       "nodes" => {
-      "node1" => {
+       "nodes" => [
+      {
       "name" => "node1",
       "chef_environment" => "test",
       "normal" => {
@@ -69,7 +70,7 @@ describe Chef::Knife::TopoCreate do
       },
       "tags" => [ "topo_tag" ]
       },
-      "node2" => {
+      {
       "name" => "node2",
       "chef_environment" => "dev",
       "normal" => {
@@ -78,7 +79,7 @@ describe Chef::Knife::TopoCreate do
       },
       "tags" => [ "topo_tag", "second_tag" ],
 
-      }}
+      }]
     }
     @topo1_file.write(@topo1_data.to_json)
     @topo1_file.flush
@@ -104,7 +105,8 @@ describe Chef::Knife::TopoCreate do
 
       expect(@topo1_item).to receive(:create)
 
-      expect(@cmd).to receive(:create_or_update_nodes).with(@topo1_item)
+      expect(@cmd).to receive(:update_node).with(@merged_data['nodes'][0])
+      expect(@cmd).to receive(:update_node).with(@merged_data['nodes'][1])
 
       @cmd.run
 
@@ -130,7 +132,8 @@ describe Chef::Knife::TopoCreate do
   describe "#load_from_file" do
     it "loads from bag files" do
 
-      expect(@cmd.loader).to receive(:find_file).with('data_bags', @topobag_name, @topo1_name + ".json").and_return(@topo1_file.path)
+      expect(@cmd.loader).to receive(:file_exists_and_is_readable?).and_return(true)
+      expect(@cmd.loader).to receive(:object_from_file).and_return(@cmd.loader.object_from_file(@topo1_file.path))
 
       item = @cmd.load_from_file(@topobag_name, @topo1_name)
       expect(item.raw_data).to eq(@topo1_data)
@@ -138,22 +141,22 @@ describe Chef::Knife::TopoCreate do
     end
   end
 
-  describe "#create_or_update_nodes" do
-    it "creates two nodes" do
+  describe "#update_node" do
+    it "does not create node" do
 
-      expect(Chef::Node).to receive(:load).and_raise(@exception_404).twice
-      expect(@cmd).to receive(:create_object).with(kind_of(Chef::Node)).twice
+      expect(Chef::Node).to receive(:load).and_raise(@exception_404)
+      expect(@cmd).not_to receive(:create_object)
 
-      @cmd.create_or_update_nodes(@topo1_item)
+      @cmd.update_node(@topo1_data["nodes"][1])
 
     end
   end
   
-    describe "#merge_topo_properties!" do
+  describe "#merge_topo_properties" do
     it "merges topo properties into a node" do
 
-      nodes = @cmd.merge_topo_properties!(@topo1_item.raw_data[nodes], @topo1_item.raw_data)
-      expect(nodes).to eq(@merged_data[:nodes])
+     nodes = @cmd.merge_topo_properties(@topo1_item.raw_data[nodes], @topo1_item.raw_data)
+     expect(nodes).to eq(@merged_data[:nodes])
 
     end
   end
