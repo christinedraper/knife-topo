@@ -83,7 +83,7 @@ class Chef
           File.open(path,"w") do |f|
             f.write(Chef::JSONCompat.to_json_pretty(topo_data))
             f.close()
-            ui.info "Imported topology #{topo_name} into  #{path}"
+            ui.info "Imported topology #{display_name(topo_data)} into  #{path}"
           end
           
           # run topo cookbook to generate the cookbooks for this topology

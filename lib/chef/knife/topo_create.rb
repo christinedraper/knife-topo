@@ -84,7 +84,9 @@ class Chef
           topo.create
          rescue Net::HTTPServerException => e
           raise unless e.to_s =~ /^409/
-          ui.confirm("Topology already exists - do you want to re-create it", true, false)
+          msg = "Topology already exists - do you want to update it";
+          msg + " to version " + topo['version'] if topo['version']
+          ui.confirm(msg, true, false)
           topo.save
         end
 
@@ -105,10 +107,10 @@ class Chef
           # if bootstrap is specified, run the bootstrap command
           run_cmd(Chef::Knife::TopoBootstrap, @topo_bootstrap_args) if config[:bootstrap]
         else
-          ui.info "No nodes found for topology #{topo_hash['name']}"
+          ui.info "No nodes found for topology #{display_name(topo_hash)}"
         end
            
-        ui.info("Topology created")
+        ui.info("Topology #{display_name(topo_hash)} created")
               
       end
       

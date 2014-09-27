@@ -79,10 +79,10 @@ class Chef
             end
 
           end
-          ui.info "Bootstrapped #{nodes.length - (@failed.length + skipped)} nodes and skipped #{skipped} nodes of #{nodes.length} in topology #{@bag_name}/#{@topo_name}"
+          ui.info "Bootstrapped #{nodes.length - (@failed.length + skipped)} nodes and skipped #{skipped} nodes of #{nodes.length} in topology #{display_name(topo)}"
           ui.warn "#{@failed.length} nodes [ #{@failed.join(', ')} ] failed to bootstrap" if @failed.length > 0
         else
-          ui.info "No nodes found for topology #{@topo_name}"
+          ui.info "No nodes found for topology #{display_name(topo)}"
         end
       end
 

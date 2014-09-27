@@ -62,7 +62,6 @@ class Chef
         
         if topo_name
           # update a specific topo
-          ui.info "Updating topology: #{topo_name} in data bag: #{bag_name}"
           
           unless current_topo = load_from_server(bag_name, topo_name)
             ui.fatal "Topology #{bag_name}/#{topo_name} does not exist on server - use 'knife topo create' first"
@@ -73,6 +72,10 @@ class Chef
             ui.info "No topology found in #{topologies_path}/#{bag_name}/#{topo_name}.json - exiting  without action"
             exit(0)
           end
+          
+          msg = "Updating topology #{display_name(current_topo)}"
+          msg = msg + " to version " + topo['version'] if topo['version']
+          ui.info msg
 
           update_topo(topo)
 
@@ -92,7 +95,7 @@ class Chef
               # do not update topologies that are not in the local workspace
               ui.info("No topology file found in #{topologies_path}/#{bag_name}/#{topo_name}.json - skipping")
             else
-              ui.info("Updating topology #{topo_name}")
+              ui.info("Updating topology #{display_name(topo)}")
               update_topo(topo)
             end
           end

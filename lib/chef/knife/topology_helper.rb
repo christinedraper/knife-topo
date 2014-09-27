@@ -290,6 +290,10 @@ class Chef
             raise if Chef::Config[:verbosity] == 2
         end        
       end
+      
+      def display_name (topo)
+        topo['name'] + ((topo['version']) ? " version " + topo['version'] : "")
+      end
 
     end
   end
