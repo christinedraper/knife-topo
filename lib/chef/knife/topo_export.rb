@@ -41,6 +41,12 @@ class Chef
       :default => "default",
       :description => "Export attributes with this priority or above"
 
+      def most_common (vals)
+        vals.group_by do |val|
+          val
+        end.values.max_by(&:size).first
+      end
+      
       def run
 
         @bag_name = topo_bag_name(config[:data_bag])
@@ -63,6 +69,15 @@ class Chef
           # merge in data for nodes that user explicitly specified
           @node_names.each do |node_name|
             merge_node_properties!(export['nodes'], node_name)
+          end
+          
+          # if a new topo, pick an topo environment based on the nodes
+          if !topo && @node_names.length != 0
+            envs = []
+            export['nodes'].each do |node| 
+              envs << node['chef_environment'] if node['chef_environment']
+            end
+            export['chef_environment'] = most_common(envs) if envs.length > 0
           end
 
         else
