@@ -22,8 +22,8 @@ topologies but differences in their configuration details.
 [Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest), 
 unzip and copy `lib/chef/knife` into your plugin directory, e.g.:
 
-	$ unzip knife-topo-0.0.9.zip -d ~
-	$ cd ~/knife-topo-0.0.9
+	$ unzip knife-topo-0.0.10.zip -d ~
+	$ cd ~/knife-topo-0.0.10
 	$ mkdir -p ~/.chef/plugins/knife
 	$ cp lib/chef/knife/* ~/.chef/plugins/knife
 
@@ -33,12 +33,15 @@ or install knife-topo as a gem
 
 You may need to use `sudo gem install knife-topo`, depending on your setup.
 
-This plugin has been tested with Chef Version 11.12 on Ubuntu 14.04 LTS, and run on Windows and Mac.
+This plugin has been tested with Chef Version 11.12 and 12.0.3 on Ubuntu 12.04 and 14.04 LTS, 
+and run on Windows and Mac.
 
 Note: I've encountered a case (on a Mac) where knife was not configured to use
  gems on the gem path. If the gem install succeeds but `knife topo`
  is not a recognized knife command, try the first approach (copy
-the ruby plugin scripts into ~/.chef/plugins/knife).
+the ruby plugin scripts into ~/.chef/plugins/knife) or install knife topo using the embedded gem:
+
+	$ /opt/chef/embedded/bin/gem install knife-topo
 
 # Usage #
 

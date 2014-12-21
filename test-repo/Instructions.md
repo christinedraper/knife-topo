@@ -22,8 +22,8 @@ To obtain the sample test-repo, [download the latest knife-topo release](http://
 and unzip it, e.g.
 
 ```
-unzip knife-topo-0.0.7.zip -d ~
-cd ~/knife-topo-0.0.7/test-repo
+unzip knife-topo-0.0.10.zip -d ~
+cd ~/knife-topo-0.0.10/test-repo
 ```
 
 
@@ -53,7 +53,7 @@ From the test-repo, do the following.  Note: you may be prompted to
 select the network to bridge to.
 
 ```
-cd ~/knife-topo-0.0.7/test-repo
+cd ~/knife-topo-0.0.10/test-repo
 vagrant up 
 ```
 
@@ -64,7 +64,7 @@ and appserver), ending with something like:
 ==> appserver: Setting hostname...
 ==> appserver: Configuring and enabling network interfaces...
 ==> appserver: Mounting shared folders...
-    appserver: /vagrant => /home/christine/knife-topo-0.0.7/test-repo
+    appserver: /vagrant => /home/christine/knife-topo-0.0.10/test-repo
 ```
 
 This starts the virtual machines on a 
@@ -84,7 +84,7 @@ You should see something like:
 In another terminal, in test-repo:
 
 ```
-cd ~/knife-topo-0.0.7/test-repo
+cd ~/knife-topo-0.0.10/test-repo
 berks install
 berks upload
 ```
@@ -185,20 +185,8 @@ try following the instructions
 [here](https://gist.github.com/fnichol/867550#the-manual-way-boring) 
 to add CA certificates for OpenSSL
 
-If `knife topo create` fails with `Data Bag items must have an id matching /^[\.\-[:alnum:]_]+$/, you gave: nil`
- then check that you do not have a file with the same name as the
- topology (e.g. test1.json)in the current directory. Knife will try
- to load a data bag item from the current directory BEFORE it reads
- from the data bag directory.
-
 If `knife topo create` fails with 'ERROR: 412 "Precondition Failed"', make sure
 you have run `berks upload` since you started chef-zero.
-
-If `knife topo create` fails with a 404 error from ark[nodejs-binary],
-make sure you have the most recent knife-topo test-repo, where
-the testapp cookbook has depends 'nodejs','~>1.3' in its metadata.
-This problem was caused by the significant change in the 2.0 version of
-the nodejs cookbook.
 
 I encountered some problems getting chef-zero to run on a private network
 on Windows 8.1 (it responded really really slowly). 
@@ -212,10 +200,8 @@ outside of the host).
 
 If you modify the cookbook_attributes for mongodb and this causes
 a downgrade, the Chef run may fail to converge. 
-There is an [issue](https://github.com/edelight/chef-mongodb/pull/305) 
-in the current cookbook which has been fixed but
-not released (as of 19 July 2014). Run the following to remove the
-installed mongodb and then retry the knife topo bootstrap:
+Run the following to remove the installed mongodb and then retry the 
+knife topo bootstrap:
 
 ```
   vagrant ssh dbserver -c 'sudo apt-get remove mongodb'

@@ -43,7 +43,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		
 			# setup networking using private network, with port forwarding where needed to access, and optional bridge
 			node_config.vm.network :public_network if options.has_key?(:public)		
-			node_config.vm.network :private_network, ip: options[:private_ipaddress] if options.has_key?(:private_ipaddress)					
+			node_config.vm.network :private_network, ip: options[:private_ipaddress] if options.has_key?(:private_ipaddress)
+			
+			if options.has_key?(:forwardports)
+				options[:forwardports].each do |port|
+					node_config.vm.network :forwarded_port, guest: port[:guest], host: port[:host]
+				end
+			end					
 			
 			node_config.vm.hostname = options[:hostname]
 		end
