@@ -84,8 +84,8 @@ class Chef
           topo.create
          rescue Net::HTTPServerException => e
           raise unless e.to_s =~ /^409/
-          msg = "Topology already exists - do you want to update it";
-          msg + " to version " + topo['version'] if topo['version']
+          msg = "Topology already exists - do you want to update it"
+          msg = msg + " to version " + topo['version'] if topo['version']
           ui.confirm(msg, true, false)
           topo.save
         end
@@ -109,8 +109,9 @@ class Chef
         else
           ui.info "No nodes found for topology #{display_name(topo_hash)}"
         end
-           
+
         ui.info("Topology #{display_name(topo_hash)} created")
+        ui.info("Build information: " + topo_hash['buildstamp']) if topo_hash['buildstamp']
               
       end
       

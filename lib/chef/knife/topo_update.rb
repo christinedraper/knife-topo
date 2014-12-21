@@ -76,6 +76,7 @@ class Chef
           msg = "Updating topology #{display_name(current_topo)}"
           msg = msg + " to version " + topo['version'] if topo['version']
           ui.info msg
+          ui.info("Build information: " + topo['buildstamp']) if topo['buildstamp']
 
           update_topo(topo)
 
