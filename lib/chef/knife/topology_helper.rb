@@ -294,7 +294,18 @@ class Chef
       end
       
       def display_name (topo)
-        topo['name'] + ((topo['version']) ? " version " + topo['version'] : "")
+        topo['name'] + ((topo['version']) ? " version " + format_topo_version(topo) : "")
+      end
+
+      # Topology version
+      def format_topo_version(topo)
+        version = nil
+        if topo['version'] 
+          version = topo['version']
+          version = version + '-' + topo['buildid'] if (topo['buildid'])
+        end
+        
+        version
       end
 
     end

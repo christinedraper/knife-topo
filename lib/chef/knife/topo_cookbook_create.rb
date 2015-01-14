@@ -85,7 +85,7 @@ class Chef
             cookbook_spec['filename'] + ".rb", cookbook_spec)
           end
         else
-          ui.info "No cookbook attributes found for topology #{@topo_name}"
+          ui.info "No topology cookbook has been specified for topology #{@topo_name}"
         end
       end
 
@@ -99,7 +99,7 @@ class Chef
           command = run_cmd(Chef::Knife::CookbookCreate, @cookbook_create_args)
         rescue Exception => e
           raise if Chef::Config[:verbosity] == 2
-          ui.warn "create of cookbook #{cookbook_name} exited with error"
+          ui.warn "Create of cookbook #{cookbook_name} exited with error"
           humanize_exception(e)
         end
 

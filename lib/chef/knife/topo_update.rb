@@ -72,13 +72,15 @@ class Chef
             ui.info "No topology found in #{topologies_path}/#{bag_name}/#{topo_name}.json - exiting  without action"
             exit(0)
           end
-          
+                    
           msg = "Updating topology #{display_name(current_topo)}"
-          msg = msg + " to version " + topo['version'] if topo['version']
+          msg = msg + " to version " + format_topo_version(topo) if topo['version']
           ui.info msg
-          ui.info("Build information: " + topo['buildstamp']) if topo['buildstamp']
 
           update_topo(topo)
+          
+          ui.info "Updated topology " + display_name(topo)
+          ui.info("Build information: " + topo['buildstamp']) if topo['buildstamp']
 
         else
           # find all topologies from server then update them from file, skipping any that have no file
@@ -96,12 +98,16 @@ class Chef
               # do not update topologies that are not in the local workspace
               ui.info("No topology file found in #{topologies_path}/#{bag_name}/#{topo_name}.json - skipping")
             else
-              ui.info("Updating topology #{display_name(topo)}")
+              msg = "Updating topology " + topo_name
+              msg = msg + " to version " + format_topo_version(topo) if topo['version']
+              ui.info msg
+              ui.info("Build information: " + topo['buildstamp']) if topo['buildstamp']
               update_topo(topo)
             end
           end
+          ui.info "Updated topologies"
+
         end
-        ui.info "Updates done"
  
       end
 

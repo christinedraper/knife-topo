@@ -63,6 +63,7 @@ class Chef
         
           topo_name = topo_data['name'] || topo_data['id']
           topo_data['id'] ||= topo_name
+          topo_data['name'] ||= topo_name
             
           if (!topo_name)
             ui.error "Could not find a topology name - #{topo_file} does not appear to be a valid topology JSON file"
@@ -83,17 +84,19 @@ class Chef
           File.open(path,"w") do |f|
             f.write(Chef::JSONCompat.to_json_pretty(topo_data))
             f.close()
-            ui.info "Imported topology #{display_name(topo_data)} into  #{path}"
+            ui.info "Created topology data bag in  #{path}"
           end
           
           # run topo cookbook to generate the cookbooks for this topology
           @topo_cookbook_args[2] = topo_name
           @topo_cookbook_args[3] = topo_file
           run_cmd(Chef::Knife::TopoCookbookCreate, @topo_cookbook_args)
-          
+          ui.info "Imported topology #{display_name(topo_data)}"
+          ui.info("Build information: " + topo_data['buildstamp']) if topo_data['buildstamp']
+       
         end
             
-        ui.info "Did not find topologies #{topo_names.join(', ')} in the exchange file"  if topo_names && topo_names.length > 0
+        ui.info "Did not find topologies #{topo_names.join(', ')} in the topology json file"  if topo_names && topo_names.length > 0
         ui.info "Import finished"
         
       end

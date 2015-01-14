@@ -50,6 +50,7 @@ describe Chef::Knife::TopoUpdate do
     }
     @topo1_newdata = {
       "id" => "topo1",
+      "name" => "topo1",
       "nodes" => [
       {
       "name" => "node1",
