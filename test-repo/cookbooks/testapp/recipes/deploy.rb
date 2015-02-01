@@ -6,44 +6,49 @@
 #
 #
 
-directory "/home/vagrant/ypo" do
-  owner "vagrant"
-  group "vagrant"
+user = node['testapp']['user'] 
+appname = node['testapp']['appname'] 
+basepath = node['testapp']['path'] 
+fullpath = ::File.join(basepath, appname)
+
+directory fullpath do
+  owner user
+  group user
   mode 00750
   action :create
 end
 
-cookbook_file "/home/vagrant/ypo/server.js" do
+cookbook_file ::File.join(fullpath, "server.js") do
   source 'server.js' 
 end
 
-cookbook_file "/home/vagrant/ypo/package.json" do
+cookbook_file ::File.join(fullpath, "package.json") do
   source 'package.json' 
 end
 
-cookbook_file "/home/vagrant/ypo/index.html" do
+cookbook_file ::File.join(fullpath, "index.html") do
   source 'index.html'  
 end
 
-execute 'install_ypo' do
-  cwd "/home/vagrant/ypo"
-  user "vagrant"
+execute 'install_testapp' do
+  cwd fullpath
+  user user
   command "npm install"
 end
 
-template "ypo.upstart.conf" do
-  path "/etc/init/ypo.conf"
+template "testapp.upstart.conf" do
+  path ::File.join("/etc/init", appname + ".conf")
   source 'nodejs.upstart.conf.erb'
   mode '0644'
   variables(
-  :user => 'vagrant',
+  :user => user,
   :node_dir => '/usr/local',
-  :app_dir => '/home/vagrant',
-  :entry => 'ypo'
+  :app_dir => basepath,
+  :entry => appname
   )
 end
 
-service 'ypo' do
+service appname do
   provider Chef::Provider::Service::Upstart
   supports :restart => true, :start => true, :stop => true
   action [:restart]
