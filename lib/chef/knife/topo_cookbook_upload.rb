@@ -76,7 +76,7 @@ class Chef
           end
           run_cmd(Chef::Knife::CookbookUpload, @topo_upload_args)
         else
-          ui.info("No cookbooks found for topology #{display_name[topo]}")
+          ui.info("No cookbooks found for topology #{display_name(topo)}")
         end                      
       end
 
