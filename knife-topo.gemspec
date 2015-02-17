@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Knife::Topo::VERSION
   spec.authors       = ["Christine Draper"]
   spec.email         = ["christine_draper@thirdwaveinsights.com"]
-  spec.summary       = "Knife plugin that to manage topologies of nodes"
-  spec.description   = spec.summary
+  spec.summary       = "Knife plugin to manage topologies of nodes"
+  spec.description   = "Knife-topo uses a JSON file to capture a topology of nodes, which can be loaded into Chef and bootstrapped"
   spec.homepage      = "https://github.com/christinedraper/knife-topo"
   spec.license       = "Apache License (2.0)"
   
