@@ -3,7 +3,7 @@
 This example assumes you have chefDK, Vagrant, VirtualBox and chef-zero.
 You can download the first three from the following links:
 
-* [chefDK](http://www.getchef.com/downloads/chef-dk/)
+* [chefDK](https://downloads.chef.io/chef-dk/)
 
 * [Vagrant](https://www.vagrantup.com/downloads.html)
 
@@ -191,7 +191,7 @@ you have run `berks upload` since you started chef-zero.
 I encountered some problems getting chef-zero to run on a private network
 on Windows 8.1 (it responded really really slowly). 
 If you have similar problems, you can use hosted Chef
-(sign up for a free account [here](https://manage.opscode.com/signup))
+(sign up for a free account [here](https://manage.chef.io/signup))
 or your own Chef server. Copy your knife settings and certificates (e.g.,
 the contents of chef-repo/.chef in the "Getting Started" download) into
 test-repo/.chef, and replace the Vagrantfile in test-repo with 

@@ -82,6 +82,7 @@ describe Chef::Knife::TopoUpdate do
 
       expect(@cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
       expect(@cmd).to receive(:load_from_server).with(@topobag_name, @topo1_name).and_return(@orig_item)
+      expect(@cmd).to receive(:upload_cookbooks)
 
       expect(@topo1_item).to receive(:save)
 

@@ -22,8 +22,8 @@ topologies but differences in their configuration details.
 [Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest), 
 unzip and copy `lib/chef/knife` into your plugin directory, e.g.:
 
-	$ unzip knife-topo-0.0.10.zip -d ~
-	$ cd ~/knife-topo-0.0.10
+	$ unzip knife-topo-0.0.12.zip -d ~
+	$ cd ~/knife-topo-0.0.12
 	$ mkdir -p ~/.chef/plugins/knife
 	$ cp lib/chef/knife/* ~/.chef/plugins/knife
 
@@ -59,7 +59,7 @@ Try out this plugin using a [test-repo](test-repo) provided in the knife-topo gi
 [Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest)
 and unzip it, then follow the [Instructions](test-repo/Instructions.md) for the example.
 
-The instructions assume you have [chefDK](http://www.getchef.com/downloads/chef-dk/)
+The instructions assume you have [chefDK](https://downloads.chef.io/chef-dk/)
  or equivalent installed and working with Vagrant and VirtualBox, but
  none of these are requirements to use the knife-topo plugin. 
  
@@ -225,13 +225,14 @@ workflow:
 * [knife topo cookbook create](#cookbook-create) - Generate the topology cookbooks
 * [knife topo cookbook upload](#cookbook-upload) - Upload the topology cookbooks
 * [knife export](#export) - Export data from a topology (or from nodes that you want in a topology)
+* [knife topo list](#list) - List the topologies
+* [knife topo search](#search) - Search for nodes that are in a topology, or in no topology
 
 The topologies are data bag items in the 'topologies' data bag, so 
 you can also use knife commands such as:
 
-* `knife data bag show topologies` - List the topologies
 * `knife data bag show topologies test1` - Show details of the test1 topology
-* `knife data bag delete topologies test1` - Delete the test1 topology 
+* `knife data bag delete topologies test1` - Delete the test1 topology data bag
 
 ### Common Options:
 
@@ -375,6 +376,7 @@ The following will create an outline for a new topology called  'christine_test'
 	$ knife topo export christine_test > christine_test.json
 
 
+
 ## knife topo import <a name="import"></a>
 
 	knife topo import [ TOPOLOGY_FILE [ TOPOLOGY ... ]] 
@@ -395,6 +397,45 @@ The following will import the 'test1' topology
 
 	$ knife topo import topology.json test1
 
+## knife topo list <a name="list"></a>
+
+	knife topo list
+
+Lists the topologies that have been created on the server.
+
+## knife topo search <a name="search"></a>
+
+	knife topo search [ QUERY ]
+  
+Searches for nodes that are in a topology and satisfy the query. With no options,
+this searches for nodes in any topology. Use `--topo=topo_name` to search
+within a specific topology. Use `--no-topo` to search for nodes in no topology.
+  
+### Examples:
+
+The following will search for nodes in any topology that have a name starting with "tst".
+
+	$ knife topo search "name:tst*"
+  
+The following will search for nodes in the "prod" chef environment that are not in a topology.
+
+	$ knife topo search "chef_environment:prod" --no-topo
+  
+The following will search for all nodes in the "systest" topology.
+
+	$ knife topo search --topo=systest
+  
+### Options:
+
+The knife topo search subcommand supports the following additional options.
+
+Option        | Description
+------------  | -----------
+--topo    | Search for nodes in the specified topology
+--no-topo | Search for nodes that are not in any topology
+See [knife search](http://docs.chef.io/knife_search.html)  | Options supported by `knife search` are passed through to the search command
+
+
 ## knife topo update <a name="update"></a>
 
 	knife topo update [ TOPOLOGY ] 
@@ -409,7 +450,7 @@ will be updated.
 Option        | Description
 ------------  | -----------
 --bootstrap    | Bootstrap the topology (see [topo bootstrap](#bootstrap))
-See [knife bootstrap](http://docs.opscode.com/knife_bootstrap.html)  | Options supported by `knife bootstrap` are passed through to the bootstrap command
+See [knife bootstrap](http://docs.chef.io/knife_bootstrap.html)  | Options supported by `knife bootstrap` are passed through to the bootstrap command
 --disable-upload   | Do not upload topology cookbooks
 
 ### Examples:
@@ -426,7 +467,7 @@ The following will update all topologies in the 'topologies' data bag.
 
 Author:: Christine Draper (christine_draper@thirdwaveinsights.com)
 
-Copyright:: Copyright (c) 2014 ThirdWave Insights, LLC
+Copyright:: Copyright (c) 2014-2015 ThirdWave Insights, LLC
 
 License:: Apache License, Version 2.0
 

@@ -101,6 +101,7 @@ describe Chef::Knife::TopoCreate do
       expect(bag).to receive(:create)
 
       expect(@cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
+      expect(@cmd).to receive(:upload_cookbooks)
       expect(@cmd).to receive(:check_chef_env).with("test")
 
       expect(@topo1_item).to receive(:create)
