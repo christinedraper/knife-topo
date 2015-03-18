@@ -41,6 +41,8 @@ class Chef
         output(format_list_for_display(Chef::DataBag.load(topo_bag)))
 
       end
+      
+      include Chef::Knife::TopologyHelper
     end
   end
 end

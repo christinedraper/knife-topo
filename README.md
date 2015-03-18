@@ -227,12 +227,12 @@ workflow:
 * [knife export](#export) - Export data from a topology (or from nodes that you want in a topology)
 * [knife topo list](#list) - List the topologies
 * [knife topo search](#search) - Search for nodes that are in a topology, or in no topology
+* [knife topo delete](#delete) - Delete a topology, but not the nodes in the topology
 
 The topologies are data bag items in the 'topologies' data bag, so 
 you can also use knife commands such as:
 
-* `knife data bag show topologies test1` - Show details of the test1 topology
-* `knife data bag delete topologies test1` - Delete the test1 topology data bag
+* `knife data bag show topologies test1` - Show details of the test1 topology data bag
 
 ### Common Options:
 
@@ -339,6 +339,14 @@ or upload topology cookbooks.
 
 $ knife topo create test1 --disable-upload
 
+## knife topo delete <a name="delete"></a>
+
+	knife topo delete TOPOLOGY
+
+Deletes the specified topology. Does not delete the nodes in the topology, but does
+remove them from the topology by removing the `['topo']['name']` attribute 
+which is used by `knife topo search`.
+
 ## knife topo export <a name="export"></a>
 
 	knife topo export [ TOPOLOGY [ NODE ... ] 
@@ -410,6 +418,9 @@ Lists the topologies that have been created on the server.
 Searches for nodes that are in a topology and satisfy the query. With no options,
 this searches for nodes in any topology. Use `--topo=topo_name` to search
 within a specific topology. Use `--no-topo` to search for nodes in no topology.
+
+`knife topo search` uses the `['topo']['name']` attribute to identify which nodes 
+are in which topology.
   
 ### Examples:
 

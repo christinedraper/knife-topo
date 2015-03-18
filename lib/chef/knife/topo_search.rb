@@ -80,7 +80,7 @@ class Chef
         # combine the grouped query and constraint
         if no_topo
           result = query ? "#{group_query} NOT #{constraint}" : constraint
-        elsif query
+        else
           result = query ? "#{constraint} AND #{group_query}" : constraint
         end
         
