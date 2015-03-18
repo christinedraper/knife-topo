@@ -59,7 +59,7 @@ describe Chef::Knife::TopoUpdate do
       {
       "name" => "node2",
       "chef_environment" => "dev",
-      "normal" => { "anotherAttr" => "newValue" }
+        "normal" => { "anotherAttr" => "newValue" }
       }]
     }
 
@@ -90,6 +90,8 @@ describe Chef::Knife::TopoUpdate do
       expect(@cmd).to receive(:update_node).with(@topo1_newdata['nodes'][1])
 
       @cmd.run
+      
+      expect(@topo1_item['nodes'][0]['normal']['topo']['name']).to eq("topo1")
 
     end
   end

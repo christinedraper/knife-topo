@@ -107,6 +107,8 @@ class Chef
             normal_defaults = topo_hash['normal'] ? topo_hash['normal'].clone : {}
             nodeprops['normal'] ||= {}
             nodeprops['normal'] = prop_merge!(normal_defaults, nodeprops['normal'])
+            nodeprops['normal'] = prop_merge!(nodeprops['normal'], nodeprops['attributes']) if nodeprops['attributes']
+            nodeprops['normal']  = prop_merge!(nodeprops['normal'], { "topo" => { "name" => topo_hash['name'] }})
 
             nodeprops['chef_environment'] ||=  topo_hash['chef_environment'] if topo_hash['chef_environment']
 

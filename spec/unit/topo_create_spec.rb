@@ -66,7 +66,8 @@ describe Chef::Knife::TopoCreate do
       "name" => "node1",
       "chef_environment" => "test",
       "normal" => {
-      "anAttr" => "aValue"
+      "anAttr" => "aValue",
+      "topo" => { "name" => "topo1" }
       },
       "tags" => [ "topo_tag" ]
       },
@@ -75,7 +76,8 @@ describe Chef::Knife::TopoCreate do
       "chef_environment" => "dev",
       "normal" => {
       "anAttr" => "aValue",
-      "anotherAttr" => "anotherValue"
+      "anotherAttr" => "anotherValue",
+      "topo" => { "name" => "topo1" }
       },
       "tags" => [ "topo_tag", "second_tag" ],
 
