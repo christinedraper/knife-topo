@@ -22,8 +22,8 @@ To obtain the sample test-repo, [download the latest knife-topo release](http://
 and unzip it, e.g.
 
 ```
-unzip knife-topo-0.0.10.zip -d ~
-cd ~/knife-topo-0.0.10/test-repo
+unzip knife-topo-1.0.0.zip -d ~
+cd ~/knife-topo-1.0.0/test-repo
 ```
 
 
@@ -53,7 +53,7 @@ From the test-repo, do the following.  Note: you may be prompted to
 select the network to bridge to.
 
 ```
-cd ~/knife-topo-0.0.10/test-repo
+cd ~/knife-topo-1.0.0/test-repo
 vagrant up 
 ```
 
@@ -64,7 +64,7 @@ and appserver), ending with something like:
 ==> appserver: Setting hostname...
 ==> appserver: Configuring and enabling network interfaces...
 ==> appserver: Mounting shared folders...
-    appserver: /vagrant => /home/christine/knife-topo-0.0.10/test-repo
+    appserver: /vagrant => /home/christine/knife-topo-1.0.0/test-repo
 ```
 
 This starts the virtual machines on a 
@@ -84,7 +84,7 @@ You should see something like:
 In another terminal, in test-repo:
 
 ```
-cd ~/knife-topo-0.0.10/test-repo
+cd ~/knife-topo-1.0.0/test-repo
 berks install
 berks upload
 ```
@@ -116,7 +116,7 @@ You should see output like:
 Import finished
 ```
 
-The \knife topo import` command has created a topology data bag and cookbook 
+The `knife topo import` command has created a topology data bag and cookbook 
 in your local workspace. To see these files:
 
 ```
@@ -165,8 +165,13 @@ standard knife commands, for example:
 knife node list
 knife node show appserver01
 knife node show appserver01 -a normal
-knife data bag show topologies test1
 ```
+
+You can use the knife topo list and search commands:
+
+```
+knife topo list
+knife topo search --topo=test1
   
 You can also try your own modifications to the topologies.json file. To
 update the topology with the modified configuration:
