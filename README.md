@@ -31,7 +31,8 @@ or install knife-topo as a gem
 
     $ gem install knife-topo
 
-You may need to use `sudo gem install knife-topo`, depending on your setup.
+You may need to use `chef gem install knife-topo` (to install into the
+embedded chefdk gem path), and you may need `sudo` depending on your setup.
 
 This plugin has been tested with Chef Version 11.12 and 12.0.3 on Ubuntu 12.04 and 14.04 LTS, 
 and run on Windows and Mac.
