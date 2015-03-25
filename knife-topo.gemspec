@@ -12,9 +12,7 @@ Gem::Specification.new do |spec|
   spec.description   = "Knife-topo uses a JSON file to capture a topology of nodes, which can be loaded into Chef and bootstrapped"
   spec.homepage      = "https://github.com/christinedraper/knife-topo"
   spec.license       = "Apache License (2.0)"
-  
-  spec.add_runtime_dependency 'chef', '>=11.8',  '<13.0'
-  
+    
   spec.files         = Dir.glob("{lib}/**/*")  +
     ['LICENSE', 'README.md', __FILE__]
   spec.require_paths = ["lib"]
