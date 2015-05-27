@@ -20,20 +20,22 @@ end
 
 cookbook_file ::File.join(fullpath, "server.js") do
   source 'server.js' 
+  owner user
 end
 
 cookbook_file ::File.join(fullpath, "package.json") do
   source 'package.json' 
+  owner user
 end
 
 cookbook_file ::File.join(fullpath, "index.html") do
   source 'index.html'  
+  owner user
 end
 
 execute 'install_testapp' do
-  cwd fullpath
-  user user
-  command "npm install"
+  # Need to run in login shell to pick up $HOME
+  command "su -l -c 'npm install #{fullpath}' #{user}"
 end
 
 template "testapp.upstart.conf" do
