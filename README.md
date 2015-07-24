@@ -338,7 +338,7 @@ The following will create the 'test1' topology, and bootstrap it.
 The following will create the 'test1' topology but will not bootstrap it 
 or upload topology cookbooks.
 
-$ knife topo create test1 --disable-upload
+	$ knife topo create test1 --disable-upload
 
 ## knife topo delete <a name="delete"></a>
 
@@ -378,17 +378,17 @@ Option        | Description
 The following will export the data for nodes n1 and n2 as part of a 
 topology called 'my_topo':
 
-	$ knife topo export n1 n2 --topo=my_topo > new_topo.json
+	$ knife topo export n1 n2 --topo my_topo > new_topo.json
 
 	
-The following will export all topologies to a file called 'all_topos.json'.
+The following will export all existing topologies to a file called 'all_topos.json'.
 
 	$ knife topo export --all > all_topos.json
 	
 The following will create an outline for a new topology called  
 'christine_test', or export the current details if it already exists:
 
-	$ knife topo export --topo=christine_test > christine_test.json
+	$ knife topo export --topo christine_test > christine_test.json
 
 
 ## knife topo import <a name="import"></a>
