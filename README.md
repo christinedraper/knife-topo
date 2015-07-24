@@ -350,9 +350,11 @@ which is used by `knife topo search`.
 
 ## knife topo export <a name="export"></a>
 
-	knife topo export [ TOPOLOGY [ NODE ... ] 
+	knife topo export [ NODE ... ] 
 
-Exports the specified topology as JSON. If the topology does not already exist, 
+Exports the nodes into a topology JSON. 
+
+If the topology does not already exist, 
 an outline for a new topology will be exported. The exported JSON
 can be used as the basis for a new topology definition.
 
@@ -367,23 +369,26 @@ The knife topo export subcommand supports the following additional options.
 
 Option        | Description
 ------------  | -----------
+--topo      | Name of the topology to export (defaults to 'topo1')
+--all       | Export all topologies
 --min-priority    | Only export attributes with a priority equal or above this priority.
 
 ### Examples:
 
-The following will export the data for nodes n1 and n2 as part of a topology called  'new_topo':
+The following will export the data for nodes n1 and n2 as part of a 
+topology called 'my_topo':
 
-	$ knife topo export new_topo n1 n2 > new_topo.json
-	
+	$ knife topo export n1 n2 --topo=my_topo > new_topo.json
+
 	
 The following will export all topologies to a file called 'all_topos.json'.
 
-	$ knife topo export  > all_topos.json
+	$ knife topo export --all > all_topos.json
 	
-The following will create an outline for a new topology called  'christine_test':
+The following will create an outline for a new topology called  
+'christine_test', or export the current details if it already exists:
 
-	$ knife topo export christine_test > christine_test.json
-
+	$ knife topo export --topo=christine_test > christine_test.json
 
 
 ## knife topo import <a name="import"></a>

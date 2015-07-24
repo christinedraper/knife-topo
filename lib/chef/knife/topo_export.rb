@@ -40,6 +40,17 @@ class Chef
       :long => "--min-priority PRIORITY",
       :default => "default",
       :description => "Export attributes with this priority or above"
+      
+      option :topo,
+      :long => "--topo TOPOLOGY",
+      :description => "Name to use for the topology",
+      :default => "topo1"
+      
+      option :all,
+      :long => "--all",
+      :description => "Export all topologies",
+      :boolean => true,
+      :default => false
 
       def most_common (vals)
         vals.group_by do |val|
@@ -51,8 +62,8 @@ class Chef
 
         @bag_name = topo_bag_name(config[:data_bag])
 
-        @topo_name = @name_args[0]
-        @node_names = @name_args[1..-1]
+        @topo_name = config[:topo] unless config[:all]
+        @node_names = @name_args
         
         unless ['default', 'normal', 'override'].include?(config[:min_priority])
           ui.warn("--min-priority should be one of 'default', 'normal' or 'override'")

@@ -84,7 +84,7 @@ class Chef
           topo.create
          rescue Net::HTTPServerException => e
           raise unless e.to_s =~ /^409/
-          msg = "Topology #{display_name(topo)} already exists - do you want to update it"
+          msg = "Topology #{topo_name} already exists - do you want to update it"
           msg = msg + " to version " + format_topo_version(topo) if topo['version']
           ui.confirm(msg, true, false)
           topo.save
