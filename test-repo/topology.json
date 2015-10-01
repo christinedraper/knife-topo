@@ -98,7 +98,9 @@
 
 				"testapp": 
 				{
-					"version": "0.0.3"
+					"version": "0.0.3",
+					"user": "vagrant",
+					"path": "/home/vagrant"
 				},
 
 				"mongodb": 

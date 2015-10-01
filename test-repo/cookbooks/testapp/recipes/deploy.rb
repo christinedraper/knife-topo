@@ -35,7 +35,7 @@ end
 
 execute 'install_testapp' do
   # Need to run in login shell to pick up $HOME
-  command "su -l -c 'npm install #{fullpath}' #{user}"
+  command "su -l -c 'cd #{fullpath} && npm install' #{user}"
 end
 
 template "testapp.upstart.conf" do
