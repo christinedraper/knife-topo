@@ -17,6 +17,8 @@
 #
 
 #
+# These tests are in need of cleaning up - big time!
+#
 
 require 'rspec'
 require 'rspec/mocks'
@@ -46,7 +48,8 @@ describe Chef::Knife::TopoCreate do
       "normal" => { "anAttr" => "aValue" },
       "nodes" => [
       {
-      "name" => "node1"
+      "name" => "node1",
+      "ssh_host" => "10.0.1.1"
       },
       {
       "name" => "node2",
@@ -58,12 +61,13 @@ describe Chef::Knife::TopoCreate do
     @merged_data = {
       "id" => "topo1",
       "name" => "topo1",
-      "chef_environment" => "test",
+     "chef_environment" => "test",
       "tags" => [ "topo_tag" ],
       "normal" => { "anAttr" => "aValue" },
        "nodes" => [
       {
       "name" => "node1",
+        "ssh_host" => "10.0.1.1",
       "chef_environment" => "test",
       "normal" => {
       "anAttr" => "aValue",
@@ -104,15 +108,72 @@ describe Chef::Knife::TopoCreate do
 
       expect(@cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
       expect(@cmd).to receive(:upload_cookbooks)
+      expect(@cmd).to receive(:resource_exists?).with("nodes/node1").and_return(false)
+      expect(@cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
       expect(@cmd).to receive(:check_chef_env).with("test")
 
       expect(@topo1_item).to receive(:create)
 
-      expect(@cmd).to receive(:update_node).with(@merged_data['nodes'][0])
+      expect(@cmd).not_to receive(:run_bootstrap)
+      expect(@cmd).not_to receive(:update_node).with(@merged_data['nodes'][0])
       expect(@cmd).to receive(:update_node).with(@merged_data['nodes'][1])
 
       @cmd.run
 
+    end
+    
+    it "disables upload and only bootstraps new nodes with --bootstrap and not --overwrite" do
+      cmd = Chef::Knife::TopoCreate.new(  [ 'topo1' ] )
+
+      cmd.name_args = [@topo1_name]
+      cmd.config[:data_bag] = @topobag_name
+      cmd.config[:bootstrap] = true
+      cmd.config[:disable_upload] = true
+    
+      bag = Chef::DataBag.new
+      allow(Chef::DataBag).to receive(:new) { bag }    
+      allow(bag).to receive(:create)
+      allow(cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
+      expect(cmd).not_to receive(:upload_cookbooks)
+      allow(cmd).to receive(:resource_exists?).with("nodes/node1").and_return(false)
+      allow(cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
+      allow(cmd).to receive(:check_chef_env).with("test")
+    
+      allow(@topo1_item).to receive(:create)
+    
+      expect(cmd).to receive(:run_bootstrap).with(@merged_data['nodes'][0], anything(), false)
+      expect(cmd).not_to receive(:run_bootstrap).with(@merged_data['nodes'][1], anything(), anything())
+      expect(cmd).not_to receive(:update_node).with(@merged_data['nodes'][0])
+      expect(cmd).to receive(:update_node).with(@merged_data['nodes'][1])
+    
+      cmd.run
+    
+    end
+    
+    it "bootstraps existing node with --bootstrap and --overwrite if it has ssh_host, otherwise update" do
+      cmd = Chef::Knife::TopoCreate.new(  [ 'topo1' ] )
+    
+      cmd.name_args = [@topo1_name]
+      cmd.config[:data_bag] = @topobag_name
+      cmd.config[:bootstrap] = true
+      cmd.config[:overwrite] = true
+    
+      bag = Chef::DataBag.new
+      allow(Chef::DataBag).to receive(:new) { bag }    
+      allow(bag).to receive(:create)
+      allow(cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
+      allow(cmd).to receive(:upload_cookbooks)
+      allow(cmd).to receive(:resource_exists?).with("nodes/node1").and_return(true)
+      allow(cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
+      allow(cmd).to receive(:check_chef_env).with("test")
+    
+      allow(@topo1_item).to receive(:create)
+    
+      expect(cmd).to receive(:run_bootstrap).with(@merged_data['nodes'][0], anything(), true)
+      expect(cmd).to receive(:update_node).with(@merged_data['nodes'][1])
+    
+      cmd.run
+    
     end
   end
 

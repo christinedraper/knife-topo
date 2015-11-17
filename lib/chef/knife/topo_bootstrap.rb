@@ -34,6 +34,11 @@ class Chef
       :short => '-D DATA_BAG',
       :long => "--data-bag DATA_BAG",
       :description => "The data bag the topologies are stored in"
+      
+      option :overwrite,
+      :long => "--overwrite",
+      :description => "Whether to overwrite existing nodes",
+      :boolean => true
 
       # Make the base bootstrap options available on topo bootstrap
       self.options = (Chef::Knife::Bootstrap.options).merge(self.options)
@@ -65,47 +70,40 @@ class Chef
 
         # load and bootstrap each node that has a ssh_host
         nodes = merge_topo_properties(topo['nodes'], topo)
-        @failed = []
-        skipped = 0
-        succeeded = 0
+          
+        bootstrapped = []
+        skipped = []
+        existed = []
+        failed = [] 
+          
         if nodes.length > 0
           nodes.each do |node_data|
-            if node_data['ssh_host']
-              run_bootstrap(node_data)
-              succeeded += 1             
+            node_name = node_data['name']
+            exists = resource_exists?("nodes/#{node_name}") 
+            if(node_data['ssh_host'] && (config[:overwrite] || !exists))
+              if run_bootstrap(node_data, @bootstrap_args, exists)
+                bootstrapped << node_name
+              else
+                failed << node_name
+              end
             else
-              ui.info "Node #{node_data['name']} does not have ssh_host specified - skipping bootstrap"
-              skipped += 1
+              if(exists)
+                existed << node_name
+              else
+                skipped << node_name
+              end
             end
-
           end
-          ui.info "Bootstrapped #{nodes.length - (@failed.length + skipped)} nodes and skipped #{skipped} nodes of #{nodes.length} in topology #{display_name(topo)}"
-          ui.warn "#{@failed.length} nodes [ #{@failed.join(', ')} ] failed to bootstrap" if @failed.length > 0
+          ui.info("Bootstrapped #{bootstrapped.length} nodes [ #{bootstrapped.join(', ')} ]")
+          ui.info("Skipped #{skipped.length} nodes [ #{skipped.join(', ')} ] because they had no ssh_host information") if skipped.length > 0
+          if existed.length > 0
+            ui.info("Skipped #{existed.length} nodes [ #{existed.join(', ')} ] because they already exist. " +
+              "Specify --overwrite to re-bootstrap existing nodes. " +
+              "If you are using Chef Vault, you may need to use --bootstrap-vault options in this case.")
+          end
+          ui.warn("#{failed.length} nodes [ #{failed.join(', ')} ] failed to bootstrap due to errors") if failed.length > 0
         else
           ui.info "No nodes found for topology #{display_name(topo)}"
-        end
-      end
-
-      # Setup the bootstrap args and run the bootstrap command
-      def run_bootstrap(node_data)
-        node_name = node_data['name']
-          
-        args = @bootstrap_args
-        args += ['-N', node_name] if(node_name)
-        args += ['-E', node_data['chef_environment']] if(node_data['chef_environment'])
-        args[1] = node_data['ssh_host']
-        args += [ '--ssh-port', node_data['ssh_port']] if node_data['ssh_port']
-        args += [ '--run-list' , node_data['run_list'].join(',')] if node_data['run_list']
-        args += [ '--json-attributes' , node_data['normal'].to_json] if node_data['normal']
-
-        ui.info "Bootstrapping node #{node_name}"
-        begin
-          run_cmd(Chef::Knife::Bootstrap, args)
-        rescue Exception => e
-          raise if Chef::Config[:verbosity] == 2
-          @failed << node_name
-          ui.warn "bootstrap of node #{node_name} exited with error"
-          humanize_exception(e)
         end
       end
 

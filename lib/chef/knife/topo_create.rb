@@ -27,7 +27,7 @@ class Chef
       
       deps do
         Chef::Knife::TopoCookbookUpload.load_deps
-        Chef::Knife::TopoBootstrap.load_deps
+        Chef::Knife::Bootstrap.load_deps
       end
 
       banner "knife topo create TOPOLOGY (options)"
@@ -46,19 +46,24 @@ class Chef
       :long => "--disable-upload",
       :description => "Do not upload topo cookbooks",
       :boolean => true
+      
+      option :overwrite,
+      :long => "--overwrite",
+      :description => "Whether to overwrite existing nodes",
+      :boolean => true
             
       # Make called command options available
       opts = self.options
-      self.options = (Chef::Knife::TopoBootstrap.options).merge(Chef::Knife::TopoCookbookUpload.options)
+      self.options = (Chef::Knife::Bootstrap.options).merge(Chef::Knife::TopoCookbookUpload.options)
       self.options.merge!(opts)
 
       def initialize (args)
         super
-        @topo_bootstrap_args  = initialize_cmd_args(args, [ 'topo', 'bootstrap', @name_args[0] ])
+        @bootstrap_args  = initialize_cmd_args(args, [ 'bootstrap', '' ])
         @topo_upload_args  = initialize_cmd_args(args, [ 'topo', 'cookbook', 'upload', @name_args[0] ])
 
         # All called commands need to accept union of options
-        Chef::Knife::TopoBootstrap.options = options
+        Chef::Knife::Bootstrap.options = options
         Chef::Knife::TopoCookbookUpload.options = options
       end
       
@@ -99,20 +104,55 @@ class Chef
         nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
         config[:disable_editing] = true
         
+        bootstrapped = []
+        updated = []
+        skipped = []
+        failed = [] 
+        
         if nodes && nodes.length > 0
-          nodes.each do |updates|
-            node_name = updates['name']
-            node = update_node(updates)
+                 
+          nodes.each do |node_data|
+            node_name = node_data['name']
+            
+            exists = resource_exists?("nodes/#{node_name}") 
+            if(node_data['ssh_host'] && config[:bootstrap] && (config[:overwrite] || !exists))
+              if run_bootstrap(node_data, @bootstrap_args, exists)
+                bootstrapped << node_name
+              else
+                failed << node_name
+              end
+            else
+              if(exists)
+                updated << node_name
+                node = update_node(node_data)                  
+              else
+                skipped << node_name
+              end
+            end
           end
-          # if bootstrap is specified, run the bootstrap command
-          run_cmd(Chef::Knife::TopoBootstrap, @topo_bootstrap_args) if config[:bootstrap]
+  
+          ui.info("Topology #{display_name(topo_hash)} created, containing #{nodes.length} nodes")
+          ui.info("Build information: " + topo_hash['buildstamp']) if topo_hash['buildstamp']
+          
+          if(config[:bootstrap])
+            ui.info("Bootstrapped #{bootstrapped.length} nodes [ #{bootstrapped.join(', ')} ]")
+            if updated.length > 0
+              ui.info("Updated #{updated.length} nodes [ #{updated.join(', ')} ] because they already exist. " +
+                "Specify --overwrite to re-bootstrap existing nodes. " +
+                "If you are using Chef Vault, you may need to use --bootstrap-vault options in this case.")
+            end
+            ui.info("Skipped #{skipped.length} nodes [ #{skipped.join(', ')} ] because they had no ssh_host information") if skipped.length > 0
+          else
+            ui.info("Updated #{updated.length} nodes [ #{updated.join(', ')} ]")
+            ui.info("Skipped #{skipped.length} nodes [ #{skipped.join(', ')} ] because they do not exist") if skipped.length > 0
+          end
+          
+          ui.warn("#{failed.length} nodes [ #{failed.join(', ')} ] failed to bootstrap due to errors") if failed.length > 0
+               
         else
           ui.info "No nodes found for topology #{display_name(topo_hash)}"
         end
-
-        ui.info("Topology #{display_name(topo_hash)} created")
-        ui.info("Build information: " + topo_hash['buildstamp']) if topo_hash['buildstamp']
-              
+             
       end
 
       include Chef::Knife::TopologyHelper      

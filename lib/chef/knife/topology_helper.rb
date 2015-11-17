@@ -21,6 +21,7 @@ require 'chef/node'
 require 'chef/encrypted_data_bag_item'
 require 'chef/environment'
 require 'chef/knife/core/object_loader'
+require 'chef/rest'
 
 class Chef
   class Knife
@@ -308,6 +309,55 @@ class Chef
         end
         
         version
+      end
+      
+      # check if resource exists
+      def resource_exists?(relative_path)
+        rest.get_rest(relative_path)
+        true
+      rescue Net::HTTPServerException => e
+        raise unless e.response.code == "404"
+        false
+      end
+      
+      # Setup the bootstrap args and run the bootstrap command
+      def run_bootstrap(node_data, bootstrap_args, overwrite=false)
+        node_name = node_data['name']
+          
+        args = bootstrap_args
+        
+        # We need to remove the --bootstrap option, if it exists, because its not valid for knife bootstrap
+        args -= ['--bootstrap']
+          
+        # And set up the node-specific data
+        args += ['-N', node_name] if(node_name)
+        args += ['-E', node_data['chef_environment']] if(node_data['chef_environment'])
+        args[1] = node_data['ssh_host']
+        args += [ '--ssh-port', node_data['ssh_port']] if node_data['ssh_port']
+        args += [ '--run-list' , node_data['run_list'].join(',')] if node_data['run_list']
+        args += [ '--json-attributes' , node_data['normal'].to_json] if node_data['normal']
+        
+        if overwrite
+          ui.info("Node #{node_name} exists and will be overwritten")
+          # delete node first so vault refresh does not pick up existing node
+          begin
+            rest.delete("nodes/#{node_name}")
+            rest.delete("clients/#{node_name}")
+          rescue Net::HTTPServerException => e
+            raise unless e.response.code == "404"
+          end
+        end
+      
+        ui.info "Bootstrapping node #{node_name}"
+        begin
+          run_cmd(Chef::Knife::Bootstrap, args)
+          true
+        rescue Exception => e
+          raise if Chef::Config[:verbosity] == 2
+          ui.warn "bootstrap of node #{node_name} exited with error"
+          humanize_exception(e)
+          false
+        end
       end
 
     end
