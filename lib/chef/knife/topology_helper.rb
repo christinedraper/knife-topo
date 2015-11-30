@@ -105,7 +105,8 @@ class Chef
           merged_nodes = nodes ? nodes.clone : []
           merged_nodes.each do |nodeprops|
 
-            normal_defaults = topo_hash['normal'] ? topo_hash['normal'].clone : {}
+            normal_defaults = topo_hash['normal'] ? 
+              Marshal.load(Marshal.dump(topo_hash['normal'])) : {}
             nodeprops['normal'] ||= {}
             nodeprops['normal'] = prop_merge!(normal_defaults, nodeprops['normal'])
             nodeprops['normal'] = prop_merge!(nodeprops['normal'], nodeprops['attributes']) if nodeprops['attributes']
