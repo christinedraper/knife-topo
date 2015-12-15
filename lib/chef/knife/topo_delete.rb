@@ -75,8 +75,8 @@ class Chef
           # load then update and save the node
           node = Chef::Node.load(node_name)
           
-          if node.normal['topo'] && node.normal['topo']['name'] == @topo_name
-            node.normal['topo'].delete('name') 
+          if node['topo'] && node['topo']['name'] == @topo_name
+            node.rm('topo','name') 
             ui.info "Removing node #{node.name} from topology"
             node.save
           end

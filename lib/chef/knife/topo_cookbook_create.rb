@@ -151,7 +151,7 @@ class Chef
           
           # Print out qualified attributes
           def print_qualified_attr(file, qualifier_hash)
-            file.puts "if node['topo']['#{qualifier_hash['qualifier']}'] == \"#{qualifier_hash['value']}\""
+            file.puts "if node['topo'] && node['topo']['#{qualifier_hash['qualifier']}'] == \"#{qualifier_hash['value']}\""
             print_priority_attrs(file, qualifier_hash, 2)
             file.puts "end"
           end

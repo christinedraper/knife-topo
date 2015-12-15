@@ -37,8 +37,12 @@ class Chef
 
       def run
 
-        topo_bag = topo_bag_name(config[:data_bag])
-        output(format_list_for_display(Chef::DataBag.load(topo_bag)))
+        begin
+          topo_bag = topo_bag_name(config[:data_bag])
+          output(format_list_for_display(Chef::DataBag.load(topo_bag)))
+        rescue Net::HTTPServerException => e
+          raise unless e.to_s =~ /^404/
+        end
 
       end
       
