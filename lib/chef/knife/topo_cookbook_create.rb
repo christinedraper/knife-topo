@@ -16,161 +16,153 @@
 # limitations under the License.
 #
 
+require_relative 'topology_loader'
 require_relative 'topology_helper'
 require 'chef/knife/cookbook_create'
 
-class Chef
-  class Knife
-    class TopoCookbookCreate < Chef::Knife
+module KnifeTopo
+  # knife topo cookbook create
+  class TopoCookbookCreate < Chef::Knife
+    deps do
+      Chef::Knife::CookbookCreate.load_deps
+    end
 
-      deps do
-        Chef::Knife::CookbookCreate.load_deps
+    banner 'knife topo cookbook create TOPOLOGY_FILE (options)'
+
+    option(
+      :data_bag,
+      short: '-D DATA_BAG',
+      long: '--data-bag DATA_BAG',
+      description: 'The data bag the topologies are stored in'
+    )
+
+    # Make the base cookbook create options available on topo cookbook
+    self.options = (Chef::Knife::CookbookCreate.options).merge(
+      TopoCookbookCreate.options)
+
+    include Chef::Knife::TopologyLoader
+    include Chef::Knife::TopologyHelper
+
+    def initialize(args)
+      super
+      @cookbook_create_args  = initialize_cmd_args(args, %w(cookbook create))
+
+      # All called commands need to accept union of options
+      Chef::Knife::CookbookCreate.options = options
+    end
+
+    def run
+      validate_args
+
+      data = load_topo_from_file_or_exit(@topo_file)
+
+      # create the topology cookbooks
+      cookbooks = data['cookbook_attributes'] || []
+      create_cookbooks(cookbooks)
+    end
+
+    def validate_args
+      unless @name_args[0]
+        show_usage
+        ui.fatal('You must specify a topology JSON file')
+        exit 1
+      end
+      @topo_file = @name_args[0]
+    end
+
+    def run_create_cookbook(cookbook_name)
+      @cookbook_create_args[2] = cookbook_name
+      begin
+        command = run_cmd(Chef::Knife::CookbookCreate, @cookbook_create_args)
+      rescue StandardError => e
+        raise if Chef::Config[:verbosity] == 2
+        ui.warn "Create of cookbook #{cookbook_name} exited with error"
+        humanize_exception(e)
       end
 
-      banner "knife topo cookbook create TOPOLOGY [ TOPOLOGY_FILE ] (options)"
-      
-      option :data_bag,
-      :short => '-D DATA_BAG',
-      :long => "--data-bag DATA_BAG",
-      :description => "The data bag the topologies are stored in"
+      # Store the cookbook config for use later
+      store_cookbook_config(command)
+    end
 
-      # Make the base cookbook create options available on topo cookbook
-      self.options = (Chef::Knife::CookbookCreate.options).merge(self.options)
+    def store_cookbook_config(command)
+      @cookbook_path = File.expand_path(Array(
+        command.config[:cookbook_path]).first)
+      @copyright = command.config[:cookbook_copyright] || 'YOUR_COMPANY_NAME'
+    end
 
-      def initialize (args)
-        super
-        @cookbook_create_args  = initialize_cmd_args(args, [ 'cookbook', 'create' ])
-
-        # All called commands need to accept union of options
-        Chef::Knife::CookbookCreate.options = options
-
+    def create_cookbooks(cookbook_specs)
+      cb_names = []
+      cookbook_specs.each do |entry|
+        cb_name = entry['cookbook']
+        run_create_cookbook(cb_name) unless cb_names.include?(cb_name)
+        cb_names << cb_name
+        filename = entry['filename'] + '.rb'
+        create_attr_file(@cookbook_path, cb_name, filename, entry)
       end
+    end
 
-      def run
-        if !@name_args[0]
-          show_usage
-          ui.fatal("You must specify the name of a topology")
-          exit 1
-        end
- 
-        @bag_name = topo_bag_name(config[:data_bag])
-        @topo_name = @name_args[0]
-        @topo_file = @name_args[1]
+    def create_attr_file(dir, cookbook_name, filename, attrs)
+      ui.info("** Creating attribute file #{filename}")
 
-        # Get the topology data from either the file or the server
-        if @topo_file
-          topologies = load_topologies(@topo_file)
-          index = topologies.find_index{ |t| t['name'] == @topo_name}
-          unless index
-            ui.fatal("Topology #{@topo_name} was not found in topology file #{@topo_file}")
-            exit(1)
-          end
-          topo = topologies[index]
-        else
-          unless topo = load_from_server(@bag_name, @topo_name )
-            ui.fatal("Topology #{@bag_name}/#{@topo_name} does not exist on the server - use 'knife topo create' first")
-            exit(1)
-          end
-        end
-
-        # create the topology cookbooks
-        attribute_cookbooks = topo['cookbook_attributes']
-        cookbook_names = []
-        if attribute_cookbooks && attribute_cookbooks.length > 0
-          attribute_cookbooks.each do |cookbook_spec|
-            cookbook_name = cookbook_spec['cookbook']
-            run_create_cookbook(cookbook_name) unless cookbook_names.include?(cookbook_name)
-            cookbook_names << cookbook_name
-            create_attr_file(@cookbook_path, cookbook_name,
-            cookbook_spec['filename'] + ".rb", cookbook_spec)
-          end
-        else
-          ui.info "No topology cookbook has been specified for topology #{@topo_name}"
-        end
-      end
-
-      private
-
-      include Chef::Knife::TopologyHelper
-
-      def run_create_cookbook(cookbook_name)
-        @cookbook_create_args[2] = cookbook_name
-        begin
-          command = run_cmd(Chef::Knife::CookbookCreate, @cookbook_create_args)
-        rescue Exception => e
-          raise if Chef::Config[:verbosity] == 2
-          ui.warn "Create of cookbook #{cookbook_name} exited with error"
-          humanize_exception(e)
-        end
-
-        # Store the cookbook path for use later
-        @cookbook_path = File.expand_path(Array(command.config[:cookbook_path]).first)
-        @copyright = command.config[:cookbook_copyright] || "YOUR_COMPANY_NAME"
-
-      end
-
-      def create_attr_file(dir, cookbook_name, filename, attrs)
-        
-        ui.info("** Creating attribute file #{filename}")
-        
-        open(File.join(dir, cookbook_name, "attributes", filename), "w") do |file|
-          file.puts <<-EOH
+      open(File.join(dir, cookbook_name, 'attributes', filename), 'w') do |file|
+        file.puts <<-EOH
 #
-# THIS FILE IS GENERATED BY THE KNIFE TOPO PLUGIN - MANUAL CHANGES WILL BE OVERWRITTEN 
+# THIS FILE IS GENERATED BY KNIFE TOPO - MANUAL CHANGES WILL BE OVERWRITTEN
 #
 # Cookbook Name:: #{cookbook_name}
 # Attribute File:: #{filename}
 #
 # Copyright #{Time.now.year}, #{@copyright}
 #
-          EOH
-          
-          # Print out attribute line
-          def print_attr(file, lhs, value1)
-            if value1.is_a?(Hash)
-              value1.each do |key, value2|
-                print_attr(file, "#{lhs}['#{key}']", value2)
-              end                           
-            else
-              rubyString = (value1 == nil) ? "nil" : Chef::JSONCompat.to_json(value1);
-              file.write "#{lhs} = " + rubyString + " \n"
-            end
-          end
-          
-          # Print out attributes hashed by priority
-          def print_priority_attrs(file, attrs, indent=0)
-            %w(default force_default normal override force_override).each do |priority|
-              if attrs[priority]
-                lhs = ""
-                indent.times { |i| lhs += " " }
-                lhs += priority
-                print_attr(file, lhs, attrs[priority])
-              end
-            end
-          end
-          
-          # Print out qualified attributes
-          def print_qualified_attr(file, qualifier_hash)
-            file.puts "if node['topo'] && node['topo']['#{qualifier_hash['qualifier']}'] == \"#{qualifier_hash['value']}\""
-            print_priority_attrs(file, qualifier_hash, 2)
-            file.puts "end"
-          end
-          
-          # Process the attributes not needing qualification
-          print_priority_attrs(file, attrs)
-          file.puts
-          
-          # Process attributes that need to be qualified
-          if attrs['conditional']
-            attrs['conditional'].each do |qualified_attrs|
-              file.puts "# Attributes for specific #{qualified_attrs['qualifier']}"
-              print_qualified_attr(file, qualified_attrs)
-            end
-          end        
-          
-        end
+        EOH
+
+        # Process the attributes not needing qualification
+        print_priority_attrs(file, attrs)
+        file.puts
+
+        # Process attributes that need to be qualified
+        print_qualified_attrs(file, attrs['conditional'])
       end
-       
+    end
+
+    # Print out attribute line
+    def print_attr(file, lhs, value1)
+      if value1.is_a?(Hash)
+        value1.each do |key, value2|
+          print_attr(file, "#{lhs}['#{key}']", value2)
+        end
+      else
+        ruby_str = value1.nil? ? 'nil' : Chef::JSONCompat.to_json(value1)
+        file.write "#{lhs} = #{ruby_str}  \n"
+      end
+    end
+
+    # Print out attributes hashed by priority
+    def print_priority_attrs(file, attrs, indent = 0)
+      priorities = %w(default force_default normal override force_override)
+      priorities.each do |priority|
+        next unless attrs[priority]
+        lhs = ''
+        indent.times { lhs += ' ' }
+        lhs += priority
+        print_attr(file, lhs, attrs[priority])
+      end
+    end
+
+    # Print out qualified attributes
+    def print_qualified_attrs(file, cond_attrs)
+      return unless cond_attrs
+      cond_attrs.each do |qattrs|
+        file.puts "# Attributes for specific #{qattrs['qualifier']}"
+        print_qualified_attr(file, qattrs)
+      end
+    end
+
+    def print_qualified_attr(file, qhash)
+      file.puts "if node['topo'] && node['topo']['#{qhash['qualifier']}']" \
+       " == \"#{qhash['value']}\""
+      print_priority_attrs(file, qhash, 2)
+      file.puts 'end'
     end
   end
 end

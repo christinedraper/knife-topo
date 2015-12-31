@@ -17,80 +17,82 @@
 #
 
 require 'chef/knife'
+require_relative 'topology_loader'
 require_relative 'topology_helper'
 
-class Chef
-  class Knife
-    class TopoDelete < Chef::Knife
+module KnifeTopo
+  # knife topo delete
+  class TopoDelete < Chef::Knife
+    deps do
+      require 'chef/data_bag'
+    end
 
-      deps do
-        require 'chef/data_bag'
+    banner 'knife topo delete TOPOLOGY (options)'
+
+    option(
+      :data_bag,
+      short: '-D DATA_BAG',
+      long: '--data-bag DATA_BAG',
+      description: 'The data bag the topologies are stored in'
+    )
+
+    include Chef::Knife::TopologyHelper
+    include Chef::Knife::TopologyLoader
+
+    def run
+      validate_args
+      config[:disable_editing] = true
+
+      # remove each node
+      @topo = load_topo_from_server(@topo_name)
+      unless @topo
+        ui.info "Topology #{topo_bag_name}/#{@topo_name} does not " \
+          'exist on server'
+        exit(0)
       end
 
-      banner "knife topo delete TOPOLOGY (options)"
+      confirm_and_delete_nodes
+      delete_topo
+    end
 
-      option :data_bag,
-      :short => '-D DATA_BAG',
-      :long => "--data-bag DATA_BAG",
-      :description => "The data bag the topologies are stored in"
- 
-
-      def run
-
-        topo_bag = topo_bag_name(config[:data_bag])
-        @topo_name = @name_args[0]
-          
-        if @name_args.length == 1
-          
-          # remove each node
-          
-          unless topo = load_from_server(topo_bag, @topo_name)
-            ui.info "Topology #{topo_bag}/#{@topo_name} does not exist on server"
-            exit(0)
-          end
-          
-          confirm("Do you want to delete topology #{@topo_name} - this does not delete nodes")
-          
-          topo['nodes'].each do | node |
-            remove_node_from_topology(node['name'])
-          end if topo['nodes']
-          
-          # delete the data bag item
-          topo.destroy(topo_bag, @topo_name)
-
-          ui.info "Deleted topology #{@topo_name}"
-        else
-          show_usage
-          ui.fatal("You must specify a topology name")
-          exit 1
-        end
-       end
-       
-      # Remove the topo name attribute from all nodes, so topo search knows they are not in the topology
-      def remove_node_from_topology(node_name)
-      
-        config[:disable_editing] = true      
-        begin
-          
-          # load then update and save the node
-          node = Chef::Node.load(node_name)
-          
-          if node['topo'] && node['topo']['name'] == @topo_name
-            node.rm('topo','name') 
-            ui.info "Removing node #{node.name} from topology"
-            node.save
-          end
-  
-        rescue Net::HTTPServerException => e
-          raise unless e.to_s =~ /^404/
-          # Node has not been created
-        end
-        
-        return node
+    def validate_args
+      unless @name_args[0]
+        show_usage
+        ui.fatal('You must specify the name of a topology')
+        exit 1
       end
-      
-      include Chef::Knife::TopologyHelper
+      @topo_name = @name_args[0]
+    end
 
+    def confirm_and_delete_nodes
+      confirm("Do you want to delete topology #{@topo_name} - " \
+        'this does not delete nodes')
+      @topo['nodes'].each do |node|
+        remove_node_from_topology(node['name'])
+      end if @topo['nodes']
+    end
+
+    def delete_topo
+      @topo.destroy(topo_bag_name, @topo_name)
+      ui.info "Deleted topology #{@topo_name}"
+    end
+
+    # Remove the topo name attribute from all nodes, so topo search
+    # knows they are not in the topology
+    def remove_node_from_topology(node_name)
+      # load then update and save the node
+      node = Chef::Node.load(node_name)
+
+      if node['topo'] && node['topo']['name'] == @topo_name
+        node.rm('topo', 'name')
+        ui.info "Removing node #{node.name} from topology"
+        node.save
+      end
+      node
+
+    rescue Net::HTTPServerException => e
+      raise unless e.to_s =~ /^404/
+      # Node has not been created
     end
   end
 end

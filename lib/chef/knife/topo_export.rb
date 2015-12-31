@@ -18,159 +18,153 @@
 
 require 'chef/knife'
 
-require_relative 'topology_helper'
+require_relative 'topology_loader'
 
-# NOTE: This command exports to stdout 
+# NOTE: This command exports to stdout
 
-class Chef
-  class Knife
-    class TopoExport < Chef::Knife
+module KnifeTopo
+  # knife topo export
+  class TopoExport < Chef::Knife
+    deps do
+    end
 
-      deps do
+    banner 'knife topo export [ NODE ... ] (options)'
+
+    option(
+      :data_bag,
+      short: '-D DATA_BAG',
+      long: '--data-bag DATA_BAG',
+      description: 'The data bag the topologies are stored in'
+    )
+
+    option(
+      :min_priority,
+      long: '--min-priority PRIORITY',
+      default: 'default',
+      description: 'Export attributes with this priority or above'
+    )
+
+    option(
+      :topo,
+      long: '--topo TOPOLOGY',
+      description: 'Name to use for the topology',
+      default: 'topo1'
+    )
+
+    include Chef::Knife::TopologyLoader
+
+    def most_common(vals)
+      return if vals.length == 0
+      vals.group_by do |val|
+        val
+      end.values.max_by(&:size).first
+    end
+
+    def run
+      unless %w(default normal override).include?(config[:min_priority])
+        ui.warn("--min-priority should be one of 'default', "\
+          "'normal' or 'override'")
+      end
+      @topo_name = config[:topo]
+      @node_names = @name_args
+      output(Chef::JSONCompat.to_json_pretty(load_or_initialize_topo))
+    end
+
+    def load_or_initialize_topo
+      topo = load_topo_from_server(@topo_name)
+      if topo
+        export = topo.raw_data
+        update_nodes!(export['nodes'])
+      else
+        export = new_topo
+      end
+      export
+    end
+
+    def new_topo
+      topo = empty_topology
+      update_nodes!(topo['nodes'])
+
+      # pick an topo environment based on the nodes
+      return topo if @node_names.length == 0
+      env = pick_env(topo['nodes'])
+      topo['chef_environment'] = env if env
+      topo
+    end
+
+    def pick_env(nodes)
+      envs = []
+      nodes.each do |node|
+        envs << node['chef_environment'] if node['chef_environment']
+      end
+      most_common(envs)
+    end
+
+    # give user a template to get started
+    def empty_topology
+      {
+        'id' => @topo_name || 'topo1',
+        'name' => @topo_name || 'topo1',
+        'chef_environment' => '_default',
+        'tags' => [],
+        'nodes' => @node_names.length == 0 ? [empty_node('node1')] : [],
+        'cookbook_attributes' => [{
+          'cookbook' =>  @topo_name || 'topo1',
+          'filename' => 'topology'
+        }]
+      }
+    end
+
+    def empty_node(name)
+      {
+        'name' => name,
+        'run_list' => [],
+        'ssh_host' => name,
+        'ssh_port' => '22',
+        'normal' => {},
+        'tags' => []
+      }
+    end
+
+    # get actual node properties for export
+    def node_export(node_name)
+      load_node_data(node_name)
+    rescue Net::HTTPServerException => e
+      raise unless e.to_s =~ /^404/
+      empty_node(node_name)
+    end
+
+    def load_node_data(node_name)
+      node_data = {}
+      node = Chef::Node.load(node_name)
+      %w(name tags chef_environment run_list).each do |key|
+        node_data[key] = node.send(key)
       end
 
-      banner "knife topo export [ TOPOLOGY [ NODE ... ]] (options)"
-
-      option :data_bag,
-      :short => '-D DATA_BAG',
-      :long => "--data-bag DATA_BAG",
-      :description => "The data bag the topologies are stored in"
-      
-      option :min_priority,
-      :long => "--min-priority PRIORITY",
-      :default => "default",
-      :description => "Export attributes with this priority or above"
-      
-      option :topo,
-      :long => "--topo TOPOLOGY",
-      :description => "Name to use for the topology",
-      :default => "topo1"
-      
-      option :all,
-      :long => "--all",
-      :description => "Export all topologies",
-      :boolean => true,
-      :default => false
-
-      def most_common (vals)
-        vals.group_by do |val|
-          val
-        end.values.max_by(&:size).first
+      %w(default normal override).each do |key|
+        node_data[key] = node.send(key) if meets_min(key)
       end
-      
-      def run
+      node_data
+    end
 
-        @bag_name = topo_bag_name(config[:data_bag])
+    def meets_min(pri)
+      min = config[:min_priority]
+      pri == 'override' ||
+        (pri == 'normal' && min == 'default') ||
+        pri == min
+    end
 
-        @topo_name = config[:topo] unless config[:all]
-        @node_names = @name_args
-        
-        unless ['default', 'normal', 'override'].include?(config[:min_priority])
-          ui.warn("--min-priority should be one of 'default', 'normal' or 'override'")
-        end
-        
-        if @topo_name
-          if topo = load_from_server(@bag_name, @topo_name)
-            export = topo.raw_data
-          else
-            export = empty_topology
-            export['nodes'].push(empty_node("node1")) if @node_names.length == 0
-          end
-
-          # merge in data for nodes that user explicitly specified
-          @node_names.each do |node_name|
-            merge_node_properties!(export['nodes'], node_name)
-          end
-          
-          # if a new topo, pick an topo environment based on the nodes
-          if !topo && @node_names.length != 0
-            envs = []
-            export['nodes'].each do |node| 
-              envs << node['chef_environment'] if node['chef_environment']
-            end
-            export['chef_environment'] = most_common(envs) if envs.length > 0
-          end
-
-        else
-          # export all topologies
-          export = []
-          if dbag = load_from_server(@bag_name)
-            dbag.keys.each do |topo_name|
-               if topo = load_from_server(@bag_name, topo_name)
-                export << topo.raw_data
-              end
-            end
-          end
-        end
-
-        output(Chef::JSONCompat.to_json_pretty(export))
-      end
-
-      # give user a template to get started
-      def empty_topology
-        {
-          "id" => @topo_name || "topo1",
-          "name" => @topo_name || "topo1",
-          "chef_environment" => "_default",
-          "tags" => [ ],
-          "nodes" => [ ],
-          "cookbook_attributes" => [{
-            "cookbook" =>  @topo_name || "topo1",
-            "filename" => "topology"
-          }]
-        }
-      end
-
-      def empty_node(name)
-        {
-          "name" => name,
-          "run_list" => [],
-          "ssh_host" => name,
-          "ssh_port" => "22",
-          "normal" => {},
-          "tags" => []
-        }
-      end
-
-      # get actual node properties for export
-      def node_export (node_name)
-
-        node_data = {}
-
-        begin
-          node = Chef::Node.load(node_name)
-          
-          node_data['name'] = node.name
-          node_data['tags'] = node.tags
-          node_data['chef_environment'] = node.chef_environment
-          node_data['run_list'] = node.run_list
-
-          pri = config[:min_priority]
-          node_data['default'] = node.default if pri == "default"
-          node_data['normal'] = node.normal if pri == "default" || pri == "normal"
-          node_data['override'] = node.override
-          
-        rescue Net::HTTPServerException => e
-          raise unless e.to_s =~ /^404/
-          node_data = empty_node(node_name)
-        end
-        
-        node_data
-      end
-
-      # merge hash properties with the actual node properties
-      def merge_node_properties!(nodes, node_name)
+    # put node details in node array, overwriting existing details
+    def update_nodes!(nodes)
+      @node_names.each do |node_name|
         # find out if the node is already in the array
-        found = nodes.index{|n| n["name"] == node_name }
+        found = nodes.index { |n| n['name'] == node_name }
         if found.nil?
           nodes.push(node_export(node_name))
         else
           nodes[found] = node_export(node_name)
         end
       end
-
-      include Chef::Knife::TopologyHelper
-
     end
   end
 end

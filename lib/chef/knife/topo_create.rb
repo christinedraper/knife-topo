@@ -17,146 +17,135 @@
 #
 
 require 'chef/knife'
+require_relative 'topology_loader'
 require_relative 'topology_helper'
 require_relative 'topo_bootstrap'
 require_relative 'topo_cookbook_upload'
 
-class Chef
-  class Knife
-    class TopoCreate < Chef::Knife
-      
-      deps do
-        Chef::Knife::TopoCookbookUpload.load_deps
-        Chef::Knife::Bootstrap.load_deps
+module KnifeTopo
+  # knife topo create
+  class TopoCreate < KnifeTopo::TopoBootstrap
+    deps do
+      KnifeTopo::TopoCookbookUpload.load_deps
+      Chef::Knife::Bootstrap.load_deps
+    end
+
+    banner 'knife topo create TOPOLOGY (options)'
+
+    option(
+      :bootstrap,
+      long: '--bootstrap',
+      description: 'Whether to bootstrap newly created nodes',
+      boolean: true
+    )
+
+    option(
+      :disable_upload,
+      long: '--disable-upload',
+      description: 'Do not upload topo cookbooks',
+      boolean: true
+    )
+
+    # Make called command options available
+    orig_opts = KnifeTopo::TopoCreate.options
+    upload_opts = KnifeTopo::TopoCookbookUpload.options
+    merged_opts = (KnifeTopo::TopoBootstrap.options).merge(upload_opts)
+    self.options = merged_opts.merge(orig_opts)
+
+    include Chef::Knife::TopologyHelper
+    include Chef::Knife::TopologyLoader
+
+    def initialize(args)
+      super
+      @topo_upload_args  = initialize_cmd_args(
+        args,
+        ['topo', 'cookbook', 'upload', @name_args[0]]
+      )
+
+      # All called commands need to accept union of options
+      KnifeTopo::TopoCookbookUpload.options = options
+    end
+
+    def bootstrap_msgs
+      {
+        bootstrapped: 'Bootstrapped %{num} nodes [ %{list} ]',
+        skipped: 'Skipped %{num} nodes [ %{list} ] ' \
+          'because they had no ssh_host information',
+        existed: 'Updated %{num} nodes [ %{list} ] because they ' \
+          "already exist.\n"\
+          "Specify --overwrite to re-bootstrap existing nodes. \n",
+        failed: '%{num} nodes [ %{list} ] failed to bootstrap due to errors'
+      }
+    end
+
+    def non_bootstrap_msgs
+      {
+        existed: 'Updated %{num} nodes [ %{list} ]',
+        skipped: 'Skipped %{num} nodes [ %{list} ] because they do not exist',
+        bootstrapped: 'Unexpected error',
+        failed: 'Unexpected error'
+      }
+    end
+
+    def run
+      validate_args
+      @topo = create_or_update_topo
+
+      # make sure env and cookbooks are in place
+      check_chef_env(@topo.chef_environment) if @topo.chef_environment
+      upload_cookbooks(@topo_upload_args) unless config[:disable_upload]
+
+      # update any existing nodes
+      nodes = merge_topo_properties(@topo.nodes, @topo)
+
+      nodes.each do |node_data|
+        bootstrap_or_update_node(node_data)
       end
 
-      banner "knife topo create TOPOLOGY (options)"
+      report
+    end
 
-      option :data_bag,
-      :short => '-D DATA_BAG',
-      :long => "--data-bag DATA_BAG",
-      :description => "The data bag the topologies are stored in"
+    def validate_args
+      super
+      @bootstrap = config[:bootstrap]
+      @msgs = @bootstrap ? bootstrap_msgs : non_bootstrap_msgs
+      config[:disable_editing] = true
+    end
 
-      option :bootstrap,
-      :long => "--bootstrap",
-      :description => "Whether to bootstrap newly created nodes",
-      :boolean => true
+    def create_or_update_topo
+      # Load the topology data & create the topology bag
+      topo = load_local_topo_or_exit(@topo_name)
+      load_or_create_topo_bag
 
-      option :disable_upload,
-      :long => "--disable-upload",
-      :description => "Do not upload topo cookbooks",
-      :boolean => true
-      
-      option :overwrite,
-      :long => "--overwrite",
-      :description => "Whether to overwrite existing nodes",
-      :boolean => true
-            
-      # Make called command options available
-      opts = self.options
-      self.options = (Chef::Knife::Bootstrap.options).merge(Chef::Knife::TopoCookbookUpload.options)
-      self.options.merge!(opts)
+      # Add topology item to the data bag on the server
+      topo.create
+      topo
+    rescue Net::HTTPServerException => e
+      raise unless e.to_s =~ /^409/
+      update_topo(topo)
+    end
 
-      def initialize (args)
-        super
-        @bootstrap_args  = initialize_cmd_args(args, [ 'bootstrap', '' ])
-        @topo_upload_args  = initialize_cmd_args(args, [ 'topo', 'cookbook', 'upload', @name_args[0] ])
+    def update_topo(topo)
+      version = topo.topo_version
+      to_version_str = " to version #{version}"
+      msg = "Topology #{@topo_name} already exists - do you want to " \
+        "update it#{to_version_str  if version}"
+      ui.confirm(msg, true, false)
+      topo.save
+      topo
+    end
 
-        # All called commands need to accept union of options
-        Chef::Knife::Bootstrap.options = options
-        Chef::Knife::TopoCookbookUpload.options = options
-      end
-      
-      def run
-        if !@name_args[0]
-          show_usage
-          ui.fatal("You must specify the name of a topology")
-          exit 1
-        end
-
-        bag_name = topo_bag_name(config[:data_bag])
-        topo_name = @name_args[0]
-
-        # Load the topology data & create the topology bag
-        unless topo = load_from_file(bag_name, topo_name )
-          ui.fatal("Topology file #{topologies_path}/#{bag_name}/#{topo_name}.json not found - use 'knife topo import' first")
-          exit(1)
-        end
-        @data_bag = create_bag(bag_name)
-        
-        # Add topology item to the data bag on the server
-        begin
-          topo.create
-         rescue Net::HTTPServerException => e
-          raise unless e.to_s =~ /^409/
-          msg = "Topology #{topo_name} already exists - do you want to update it"
-          msg = msg + " to version " + format_topo_version(topo) if topo['version']
-          ui.confirm(msg, true, false)
-          topo.save
-        end
-
-        # make sure env and cookbooks are in place
-        check_chef_env(topo['chef_environment']) if topo['chef_environment']
-        upload_cookbooks(@topo_upload_args) if (!config[:disable_upload])  
-
-        # update any existing nodes
-        topo_hash = topo.raw_data
-        nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
-        config[:disable_editing] = true
-        
-        bootstrapped = []
-        updated = []
-        skipped = []
-        failed = [] 
-        
-        if nodes && nodes.length > 0
-                 
-          nodes.each do |node_data|
-            node_name = node_data['name']
-            
-            exists = resource_exists?("nodes/#{node_name}") 
-            if(node_data['ssh_host'] && config[:bootstrap] && (config[:overwrite] || !exists))
-              if run_bootstrap(node_data, @bootstrap_args, exists)
-                bootstrapped << node_name
-              else
-                failed << node_name
-              end
-            else
-              if(exists)
-                updated << node_name
-                node = update_node(node_data)                  
-              else
-                skipped << node_name
-              end
-            end
-          end
-  
-          ui.info("Topology #{display_name(topo_hash)} created, containing #{nodes.length} nodes")
-          ui.info("Build information: " + topo_hash['buildstamp']) if topo_hash['buildstamp']
-          
-          if(config[:bootstrap])
-            ui.info("Bootstrapped #{bootstrapped.length} nodes [ #{bootstrapped.join(', ')} ]")
-            if updated.length > 0
-              ui.info("Updated #{updated.length} nodes [ #{updated.join(', ')} ] because they already exist. " +
-                "Specify --overwrite to re-bootstrap existing nodes. " +
-                "If you are using Chef Vault, you may need to use --bootstrap-vault options in this case.")
-            end
-            ui.info("Skipped #{skipped.length} nodes [ #{skipped.join(', ')} ] because they had no ssh_host information") if skipped.length > 0
-          else
-            ui.info("Updated #{updated.length} nodes [ #{updated.join(', ')} ]")
-            ui.info("Skipped #{skipped.length} nodes [ #{skipped.join(', ')} ] because they do not exist") if skipped.length > 0
-          end
-          
-          ui.warn("#{failed.length} nodes [ #{failed.join(', ')} ] failed to bootstrap due to errors") if failed.length > 0
-               
+    def bootstrap_or_update_node(node_data)
+      node_name = node_data['name']
+      if @bootstrap
+        update_node(node_data) unless node_bootstrap(node_data)
+      else
+        if update_node(node_data)
+          @results[:existed] << node_name
         else
-          ui.info "No nodes found for topology #{display_name(topo_hash)}"
+          @results[:skipped] << node_name
         end
-             
       end
-
-      include Chef::Knife::TopologyHelper      
-
     end
   end
 end

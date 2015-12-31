@@ -17,71 +17,75 @@
 #
 
 require 'chef/knife'
+require_relative 'topology_loader'
 require_relative 'topology_helper'
 
-## only require if not already defined (to prevent warning about already initialized constants)
-require 'chef/knife/cookbook_upload' if !defined? Chef::Knife::CookbookUpload
+# only require if not already defined (to prevent warning
+# about already initialized constants)
+require 'chef/knife/cookbook_upload' unless defined? Chef::Knife::CookbookUpload
 
-class Chef
-  class Knife
-    class TopoCookbookUpload < Chef::Knife
-      
-      deps do
-        Chef::Knife::CookbookUpload.load_deps
+module KnifeTopo
+  # knife topo cookbook upload
+  class TopoCookbookUpload < Chef::Knife
+    deps do
+      Chef::Knife::CookbookUpload.load_deps
+    end
+
+    banner 'knife topo cookbook upload TOPOLOGY (options)'
+
+    option(
+      :data_bag,
+      short: '-D DATA_BAG',
+      long: '--data-bag DATA_BAG',
+      description: 'The data bag the topologies are stored in'
+    )
+
+    # Make called command options available
+    self.options = (Chef::Knife::CookbookUpload.options).merge(
+      TopoCookbookUpload.options)
+
+    include Chef::Knife::TopologyHelper
+    include Chef::Knife::TopologyLoader
+
+    def initialize(args)
+      super
+      @cookbook_upload_args  = initialize_cmd_args(args, %w(cookbook upload))
+
+      # All called commands need to accept union of options
+      Chef::Knife::CookbookUpload.options = options
+    end
+
+    def run
+      validate_args
+
+      # Load the topology data
+      data = load_local_topo_or_exit(@topo_name).raw_data
+
+      # Run cookbook upload command on the topology cookbooks
+      cookbooks = data['cookbook_attributes'] || []
+      upload_cookbooks(cookbooks)
+    end
+
+    def validate_args
+      unless @name_args[0]
+        show_usage
+        ui.fatal('You must specify the name of a topology')
+        exit 1
       end
+      @topo_name = @name_args[0]
+    end
 
-      banner "knife topo cookbook upload [ TOPOLOGY ] (options)"
-
-      option :data_bag,
-      :short => '-D DATA_BAG',
-      :long => "--data-bag DATA_BAG",
-      :description => "The data bag the topologies are stored in"
-
-      # Make called command options available
-      self.options = (Chef::Knife::CookbookUpload.options).merge(self.options)
-
-      def initialize (args)
-        super
-        @topo_upload_args  = initialize_cmd_args(args, [ 'cookbook', 'upload' ])
-
-        # All called commands need to accept union of options
-        Chef::Knife::CookbookUpload.options = options
+    def upload_cookbooks(cookbook_specs)
+      n = []
+      pos = 2
+      cookbook_specs.each do |entry|
+        cb_name = entry['cookbook']
+        @cookbook_upload_args[pos] = cb_name unless n.include?(cb_name)
+        n << cb_name
+        pos += 1
       end
-      
-      def run
-        if !@name_args[0]
-          show_usage
-          ui.fatal("You must specify the name of a topology")
-          exit 1
-        end
-
-        bag_name = topo_bag_name(config[:data_bag])
-        topo_name = @name_args[0]
-
-        # Load the topology data 
-        unless topo = load_from_file(bag_name, topo_name )
-          ui.fatal("Topology file #{topologies_path}/#{bag_name}/#{topo_name}.json not found - use 'knife topo import' first")
-          exit(1)
-        end
-        
-        # Run cookbook upload command on the topology cookbooks
-        cookbook_names = []
-        if topo['cookbook_attributes'] && topo['cookbook_attributes'].length > 0
-          argPos = 2
-          topo['cookbook_attributes'].each do |entry|
-            cookbook_name = entry['cookbook']
-            @topo_upload_args[argPos] = cookbook_name unless cookbook_names.include?(cookbook_name)
-            cookbook_names << cookbook_name  
-            argPos += 1
-          end
-          run_cmd(Chef::Knife::CookbookUpload, @topo_upload_args)
-        else
-          ui.info("No cookbooks found for topology #{display_name(topo)}")
-        end                      
-      end
-
-      include Chef::Knife::TopologyHelper
-
+      run_cmd(Chef::Knife::CookbookUpload, @cookbook_upload_args)
+      ui.info("Uploaded #{n.length} topology cookbooks [#{n.join(', ')}]")
     end
   end
 end

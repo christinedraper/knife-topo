@@ -17,122 +17,46 @@
 #
 
 require 'chef/knife'
-require_relative 'topo_cookbook_upload'
+require_relative 'topo_create'
 
-class Chef
-  class Knife
-    class TopoUpdate < Chef::Knife
+module KnifeTopo
+  # knife topo update
+  class TopoUpdate < KnifeTopo::TopoCreate
+    deps do
+      KnifeTopo::TopoCookbookUpload.load_deps
+      Chef::Knife::Bootstrap.load_deps
+    end
 
-      deps do
-        Chef::Knife::TopoCookbookUpload.load_deps
+    banner 'knife topo update TOPOLOGY (options)'
+
+    # Make called command options available
+    orig_opts = KnifeTopo::TopoCreate.options
+    upload_opts = KnifeTopo::TopoCookbookUpload.options
+    merged_opts = (KnifeTopo::TopoBootstrap.options).merge(upload_opts)
+    self.options = merged_opts.merge(orig_opts)
+
+    def run
+      validate_args
+      load_topo_from_server_or_exit(@topo_name)
+      @topo = update_topo
+      check_chef_env(@topo.chef_environment) if @topo.chef_environment
+      upload_cookbooks(@topo_upload_args) unless config[:disable_upload]
+
+      # update any existing nodes
+      nodes = merge_topo_properties(@topo['nodes'], @topo)
+
+      nodes.each do |node_data|
+        bootstrap_or_update_node(node_data)
       end
 
-      banner "knife topo update [ TOPOLOGY ] (options)"
+      report
+    end
 
-      option :data_bag,
-      :short => '-D DATA_BAG',
-      :long => "--data-bag DATA_BAG",
-      :description => "The data bag the topologies are stored in"
-
-      option :disable_upload,
-      :long => "--disable-upload",
-      :description => "Do not upload topo cookbooks",
-      :boolean => true
- 
-      # Make called command options available
-      self.options = Chef::Knife::TopoCookbookUpload.options.merge(self.options)
-
-      def initialize (args)
-        super
-        @topo_upload_args  = initialize_cmd_args(args, [ 'topo', 'cookbook', 'upload', '' ])
-
-        # All called commands need to accept union of options
-        Chef::Knife::TopoCookbookUpload.options = options
-      end
-
-      def run
-
-        bag_name = topo_bag_name(config[:data_bag])
-
-        if !@name_args[0]
-             ui.confirm("Do you want to update all topologies in the #{bag_name} data bag", true, true)
-        end
-
-        topo_name = @name_args[0]
-        
-        if topo_name
-          # update a specific topo
-          
-          unless current_topo = load_from_server(bag_name, topo_name)
-            ui.fatal "Topology #{bag_name}/#{topo_name} does not exist on server - use 'knife topo create' first"
-            exit(1)
-          end
-          
-          unless topo = load_from_file(bag_name, topo_name)
-            ui.info "No topology found in #{topologies_path}/#{bag_name}/#{topo_name}.json - exiting  without action"
-            exit(0)
-          end
-                    
-          msg = "Updating topology #{display_name(current_topo)}"
-          msg = msg + " to version " + format_topo_version(topo) if topo['version']
-          ui.info msg
-
-          update_topo(topo)
-          
-          ui.info "Updated topology " + display_name(topo)
-          ui.info("Build information: " + topo['buildstamp']) if topo['buildstamp']
-
-        else
-          # find all topologies from server then update them from file, skipping any that have no file
-          ui.info "Updating all topologies in data bag: #{bag_name}"
-
-          unless dbag = load_from_server(bag_name)
-            ui.fatal "Data bag #{bag_name} does not exist on server - use 'knife topo create' first"
-            exit(1)
-          end
-
-          dbag.keys.each do |topo_name|
-
-            topo = load_from_file(bag_name, topo_name)
-            if !topo
-              # do not update topologies that are not in the local workspace
-              ui.info("No topology file found in #{topologies_path}/#{bag_name}/#{topo_name}.json - skipping")
-            else
-              msg = "Updating topology " + topo_name
-              msg = msg + " to version " + format_topo_version(topo) if topo['version']
-              ui.info msg
-              ui.info("Build information: " + topo['buildstamp']) if topo['buildstamp']
-              update_topo(topo)
-            end
-          end
-          ui.info "Updated topologies"
-
-        end
- 
-      end
-
-      def update_topo(topo)
-        topo.save
-        @topo_upload_args[3] = topo['name']
-        upload_cookbooks(@topo_upload_args) if (!config[:disable_upload]) 
-
-        topo_hash = topo.raw_data
-        nodes = merge_topo_properties(topo_hash['nodes'], topo_hash)
-        config[:disable_editing] = true
-        
-        if nodes && nodes.length > 0
-          nodes.each do |updates|
-            node_name = updates['name']
-            node = update_node(updates)
-            ui.info "Node #{node_name} does not exist - skipping update" if (!node)
-          end
-        else
-          ui.info "No nodes found for topology #{topo_hash['name']}"
-        end
-      end
-
-      include Chef::Knife::TopologyHelper
-      
+    def update_topo
+      # Load the topology data & update the topology bag
+      topo_item = load_local_topo_or_exit(@topo_name)
+      topo_item.save
+      topo_item
     end
   end
 end

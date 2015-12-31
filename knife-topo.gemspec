@@ -5,7 +5,7 @@ require 'chef/knife/topo/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "knife-topo"
-  spec.version       = Knife::Topo::VERSION
+  spec.version       = KnifeTopo::VERSION
   spec.authors       = ["Christine Draper"]
   spec.email         = ["christine_draper@thirdwaveinsights.com"]
   spec.summary       = "Knife plugin to manage topologies of nodes"

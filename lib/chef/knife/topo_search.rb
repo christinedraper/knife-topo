@@ -19,75 +19,73 @@
 require_relative 'topology_helper'
 require 'chef/knife/search'
 
-class Chef
-  class Knife
-    class TopoSearch < Chef::Knife::Search
+module KnifeTopo
+  # knife topo search
+  class TopoSearch < Chef::Knife::Search
+    banner 'knife topo search [ QUERY ] (options)'
 
-      banner "knife topo search [ QUERY ] (options)"
-      
-      option :topo,
-      :long => "--topo TOPOLOGY",
-      :description => "Restrict search to nodes in the specified topology"
-      
-      option :no_topo,
-      :long => "--no-topo",
-      :description => "Restrict search to nodes that are not in any topology",
-      :boolean => true,
-      :default => true
+    option(
+      :topo,
+      long: '--topo TOPOLOGY',
+      description: 'Restrict search to nodes in the specified topology'
+    )
 
-      # Make the base search options available on topo search
-      self.options = (Chef::Knife::Search.options).merge(self.options)
+    option(
+      :no_topo,
+      long: '--no-topo',
+      description: 'Restrict search to nodes that are not in any topology',
+      boolean: true
+    )
 
-      def initialize (args)
-        super
-        topo_query = constrain_query(@name_args[0] || config[:query], config[:topo], !config[:no_topo].nil?)
+    # Make the base search options available on topo search
+    orig_opts = KnifeTopo::TopoSearch.options
+    self.options = (Chef::Knife::Search.options).merge(orig_opts)
 
-        # force a node search
-        @name_args[0] = "node"
+    include Chef::Knife::TopologyHelper
 
-        # override any query 
-        if config[:query]
-          config[:query] = topo_query
-        else
-          @name_args[1] = topo_query          
-        end
+    def run
+      setup_query
+      super
+    rescue StandardError => e
+      raise if Chef::Config[:verbosity] == 2
+      ui.error "Topology search for \"#{@query}\" exited with error"
+      humanize_exception(e)
+    end
 
+    def setup_query
+      query_str = @name_args[0] || config[:query]
+      topo_query = constrain_query(query_str, config[:topo])
+
+      # force a node search
+      @name_args[0] = 'node'
+
+      # override any query
+      if config[:query]
+        config[:query] = topo_query
+      else
+        @name_args[1] = topo_query
       end
+    end
 
-      def run
-        begin
-          super
-        rescue Exception => e
-          raise if Chef::Config[:verbosity] == 2
-          ui.error "Topology search for \"#{@query}\" exited with error"
-          humanize_exception(e)
-        end
+    def constrain_query(query, topo_name)
+      # group existing query workaround for strange behavior with
+      # NOTs and invalid query if put brackets round them
+      group_query = query && !query.start_with?('NOT') ? "(#{query})" : query
+
+      # search specific topologies or all/none
+      constraint = (topo_name) ? 'topo_name:' + topo_name : 'topo_name:*'
+
+      # combine the grouped query and constraint
+      combine(query, group_query, constraint)
+    end
+
+    def combine(query, group_query, constraint)
+      find_in_topo = config[:topo] || config[:no_topo].nil?
+      if find_in_topo
+        query ? "#{constraint} AND #{group_query}" : constraint
+      else
+        query ? "#{group_query} NOT #{constraint}" : "NOT #{constraint}"
       end
-
-      private
-
-      include Chef::Knife::TopologyHelper
-      
-      def constrain_query(query, topo_name, no_topo)
-        
-        # group existing query
-        # workaround for strange behavior with NOTs and invalid query if put brackets round them
-        group_query = query && !query.start_with?("NOT") ? "(#{query})" : query
-        
-        # search specific topologies or all/none
-        constraint = (topo_name) ? "topo_name:" + topo_name : "topo_name:*" 
-        
-        # combine the grouped query and constraint
-        if no_topo
-          result = query ? "#{group_query} NOT #{constraint}" : "NOT #{constraint}"
-        else
-          result = query ? "#{constraint} AND #{group_query}" : constraint
-        end
-        
-        result
-      end
-      
-       
     end
   end
 end

@@ -1,8 +1,8 @@
 #
 # Cookbook Name:: testapp
-# Recipe:: db
+# Recipe:: appserver
 #
-# Copyright 2014, ThirdWave Insights
+# Copyright 2015, ThirdWave Insights
 #
 
-include_recipe "nodejs::install_from_binary"
+include_recipe "nodejs::default"

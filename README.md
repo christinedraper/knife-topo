@@ -16,33 +16,36 @@ through a single (json) configuration file. It may also be useful
 if you are regularly bringing up multi-node systems with similar 
 topologies but differences in their configuration details.
 
+# Changes from V1 #
+
+## Attribute setting method
+
+V2 introduces the notion of an `attribute_setting_method`. Instead of
+specifying normal node attributes or cookbook attributes
+with a specific priority, you specify one set of attributes for the
+node and the method by which they should be set on the node 
+(e.g. 'direct' or 'via_cookbook'). You no longer specify attribute
+priorities (this is left to the attribute setting method). However,
+you can specify a set of 'persistent_attributes' which the attribute
+setting method will set as 'normal' priority (or other future Chef
+mechanism).
+
+V1 topology JSON files can be converted to V2 by importing them and
+then exporting them.
+
+The purpose of this change is to make it easier to support new
+methods of setting attributes such as policy files, and also making it
+easier to switch between methods.
+
+## One topology per file
+
+To reduce complexity, V2 no longer supports multiple topologies in a JSON file.
 
 # Installation #
 
-[Download the latest knife-topo release](http://github.com/christinedraper/knife-topo/releases/latest), 
-unzip and copy `lib/chef/knife` into your plugin directory, e.g.:
+Install knife-topo as a gem
 
-	$ unzip knife-topo-1.0.0.zip -d ~
-	$ cd ~/knife-topo-1.0.0
-	$ mkdir -p ~/.chef/plugins/knife
-	$ cp lib/chef/knife/* ~/.chef/plugins/knife
-
-or install knife-topo as a gem
-
-    $ gem install knife-topo
-
-You may need to use `chef gem install knife-topo` (to install into the
-embedded chefdk gem path), and you may need `sudo` depending on your setup.
-
-This plugin has been tested with Chef Version 11.12 and 12.0.3 on Ubuntu 12.04 and 14.04 LTS, 
-and run on Windows and Mac.
-
-Note: I've encountered a case (on a Mac) where knife was not configured to use
- gems on the gem path. If the gem install succeeds but `knife topo`
- is not a recognized knife command, try the first approach (copy
-the ruby plugin scripts into ~/.chef/plugins/knife) or install knife topo using the embedded gem:
-
-	$ /opt/chef/embedded/bin/gem install knife-topo
+    $ chef gem install knife-topo
 
 # Usage #
 
@@ -61,33 +64,32 @@ Try out this plugin using a [test-repo](test-repo) provided in the knife-topo gi
 and unzip it, then follow the [Instructions](test-repo/Instructions.md) for the example.
 
 The instructions assume you have [chefDK](https://downloads.chef.io/chef-dk/)
- or equivalent installed and working with Vagrant and VirtualBox, but
- none of these are requirements to use the knife-topo plugin. 
+ installed and working with Vagrant and VirtualBox. 
  
  If you're the sort of person who just wants to jump in and try it, here's some hints.
  
 Generate a topology file for a topology called test1 from existing nodes node1 and node2:
 
-	knife topo export test1 node1 node2 > topology.json
+	knife topo export node1 node2 --topo test1 > test1.json
 
 Import a topology json file, generating all of the necessary artifacts in your workspace:
 
-	knife topo import topology1.json
+	knife topo import test1.json
 
 Create the topology using existing nodes:
 
 	knife topo create test1
 	
-Create the topology bootstrapping new nodes in vagrant (you will need to add the 
+Create the topology, bootstrapping new nodes in vagrant (you will need to add the 
 host details for bootstrap to the file before importing):
 
 	knife topo create test1 --bootstrap -xvagrant -Pvagrant --sudo 
 
 # Topology File <a name="topology-file"></a>#
 
-See the [example topology file](test-repo/topology.json)
+See the [example topology file](test-repo/test1.json)
 
-The topology file contains a single topology, or an array of topologies.
+The topology file contains a single topology.
 Each topology has some overall properties, an array of nodes and 
 an array defining topology cookbook attributes.
 
@@ -98,15 +100,18 @@ an array defining topology cookbook attributes.
         "name": "test1",
         "chef_environment": "test",
         "tags": ["system_sys1", "phase_test" ],
-        "normal": {
-            "owner": {
-              "name": "Christine Draper"
-            }
+        "attributes": {
+          "owner": {
+            "name": "Christine Draper"
+          }
+        },
+        "persistent_attributes" : {
+          "topo": {
+            "node_type": "appserver"
+          }
         },
         "nodes" : [
           ...
-        ],
-        "cookbook_attributes" : [
         ]
     }
 ```
@@ -268,7 +273,7 @@ user name of vagrant, password of vagrant, and running using sudo.
 
 ## knife topo cookbook create <a name="cookbook-create"></a>
 
-	knife topo cookbook create TOPOLOGY
+	knife topo cookbook create TOPOLOGY_FILE
 
 Generates the topology cookbook attribute files and attributes described in the 
 [cookbook_attributes](#cookbook-attributes) property.
@@ -291,7 +296,7 @@ topology test1.
 
 	knife topo cookbook upload TOPOLOGY
 
-Uploads the topology cookbook attribute files.
+Uploads the topology cookbook.
 
 ### Options:
 
@@ -306,7 +311,7 @@ See [knife cookbook upload](http://docs.opscode.com/chef/knife.html#cookbook)  |
 The following will generate the topology cookbook attribute files for
 topology test1.
 
-	$ knife topo cookbook create test1
+	$ knife topo cookbook create test1.json
 	
   
 ## knife topo create <a name="create"></a>
@@ -370,7 +375,6 @@ The knife topo export subcommand supports the following additional options.
 Option        | Description
 ------------  | -----------
 --topo      | Name of the topology to export (defaults to 'topo1')
---all       | Export all topologies
 --min-priority    | Only export attributes with a priority equal or above this priority.
 
 ### Examples:
@@ -378,12 +382,8 @@ Option        | Description
 The following will export the data for nodes n1 and n2 as part of a 
 topology called 'my_topo':
 
-	$ knife topo export n1 n2 --topo my_topo > new_topo.json
+	$ knife topo export n1 n2 --topo my_topo > my_topo.json
 
-	
-The following will export all existing topologies to a file called 'all_topos.json'.
-
-	$ knife topo export --all > all_topos.json
 	
 The following will create an outline for a new topology called  
 'christine_test', or export the current details if it already exists:
@@ -393,16 +393,17 @@ The following will create an outline for a new topology called
 
 ## knife topo import <a name="import"></a>
 
-	knife topo import [ TOPOLOGY_FILE [ TOPOLOGY ... ]] 
+	knife topo import [ TOPOLOGY_FILE ] 
 
-Imports the topologies from a
+Imports data bag items containing the topologies from a
 [topology file](#topology-file) into the local repo. If no topology
 file is specified, attempts to read from a file called 'topology.json'
-in the current directory. Generates the topology cookbook attribute 
-files and attributes described in the 'cookbook_attributes' property.
+in the current directory. Generates additional artifacts (e.g. 
+topology cookbook attribute file) where needed.
 
 ### Examples:
-The following will import all topologies defined in the 'topology.json' file.
+The following will import the topology or topologies defined in the 
+'topology.json' file.
 
 	$ knife topo import topology.json
 
@@ -484,7 +485,7 @@ The following will update all topologies in the 'topologies' data bag.
 
 Author:: Christine Draper (christine_draper@thirdwaveinsights.com)
 
-Copyright:: Copyright (c) 2014-2015 ThirdWave Insights, LLC
+Copyright:: Copyright (c) 2014-2016 ThirdWave Insights, LLC
 
 License:: Apache License, Version 2.0
 

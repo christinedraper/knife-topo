@@ -23,12 +23,12 @@ require 'rspec/mocks'
 require File.expand_path('../../spec_helper', __FILE__)
 require 'chef/knife/topo_update'
 
-#Chef::Knife::TopoCreate.load_deps
+#KnifeTopo::TopoCreate.load_deps
 
-describe Chef::Knife::TopoUpdate do
+describe KnifeTopo::TopoUpdate do
   before :each do
     Chef::Config[:node_name]  = "christine_test"
-    @cmd = Chef::Knife::TopoUpdate.new([ 'knife', 'topo', 'update', 'topo1' ])
+    @cmd = KnifeTopo::TopoUpdate.new([ 'knife', 'topo', 'update', 'topo1' ])
 
     # setup test data bags
     @topobag_name = 'testsys_test'
@@ -62,11 +62,15 @@ describe Chef::Knife::TopoUpdate do
         "normal" => { "anotherAttr" => "newValue" }
       }]
     }
+    
+    @topo_bag = Chef::DataBag.new
+    allow(Chef::DataBag).to receive(:new) { @topo_bag }
+    allow(Chef::DataBag).to receive(:load).with(@topobag_name) { @topo_bag }
 
-    @orig_item = Chef::DataBagItem.new
+    @orig_item = Chef::Topology.new
     @orig_item.raw_data = @topo1_origdata
     @orig_item.data_bag(@topobag_name)
-    @topo1_item = Chef::DataBagItem.new
+    @topo1_item = Chef::Topology.new
     @topo1_item.raw_data = @topo1_newdata
     @topo1_item.data_bag(@topobag_name)
  
@@ -77,11 +81,10 @@ describe Chef::Knife::TopoUpdate do
     it "loads topology and updates objects on server" do
       @cmd.name_args = [@topo1_name]
 
-      bag = Chef::DataBag.new
-      allow(Chef::DataBag).to receive(:new) { bag }
-
-      expect(@cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
-      expect(@cmd).to receive(:load_from_server).with(@topobag_name, @topo1_name).and_return(@orig_item)
+      allow(@cmd).to receive(:resource_exists?).with("nodes/node1").and_return(false)
+      allow(@cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
+      expect(@cmd).to receive(:load_local_topo_or_exit).with(@topo1_name).and_return(@topo1_item)
+      expect(@cmd).to receive(:load_topo_from_server).with(@topo1_name).and_return(@orig_item)
       expect(@cmd).to receive(:upload_cookbooks)
 
       expect(@topo1_item).to receive(:save)

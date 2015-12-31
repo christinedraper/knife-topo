@@ -1,5 +1,4 @@
-module Knife
-  module Topo
-    VERSION = "1.1.2"
-  end
+# version
+module KnifeTopo
+  VERSION = '2.0.1'
 end

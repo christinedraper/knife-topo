@@ -24,14 +24,14 @@ require 'rspec'
 require 'rspec/mocks'
 require File.expand_path('../../spec_helper', __FILE__)
 require 'chef/knife/topo_create'
+require 'chef/knife'
 require 'chef/node'
 
-#Chef::Knife::TopoCreate.load_deps
+#KnifeTopo::TopoCreate.load_deps
 
-describe Chef::Knife::TopoCreate do
+describe KnifeTopo::TopoCreate do
   before :each do
     Chef::Config[:node_name]  = "christine_test"
-    @cmd = Chef::Knife::TopoCreate.new(  [ 'topo1' ] )
 
     # setup test data bags
     @tmp_dir = Dir.mktmpdir
@@ -90,7 +90,15 @@ describe Chef::Knife::TopoCreate do
     @topo1_file.write(@topo1_data.to_json)
     @topo1_file.flush
 
-    @topo1_item = Chef::DataBagItem.new
+    @topo_bag = Chef::DataBag.new
+    allow(Chef::DataBag).to receive(:new) { @topo_bag }
+    allow(Chef::DataBag).to receive(:load).with(@topobag_name) { @topo_bag }
+      
+    @topo1_item = Chef::Topology.new
+    allow(Chef::Topology).to receive(:new) { @topo1_item }
+    @cmd = KnifeTopo::TopoCreate.new(['topo1', "--data-bag=#{@topobag_name}"])
+    allow(@cmd).to receive(:get_local_topo_path).and_return(@topo1_file.path)
+
     @topo1_item.raw_data = @cmd.loader.object_from_file(@topo1_file.path)
     @topo1_item.data_bag(@topobag_name)
 
@@ -99,69 +107,55 @@ describe Chef::Knife::TopoCreate do
   end
   describe "#run" do
     it "loads from bag files and creates objects on server" do
-      @cmd.name_args = [@topo1_name]
-      @cmd.config[:data_bag] = @topobag_name
+      allow(@cmd).to receive(:resource_exists?).with("nodes/node1").and_return(false)
+      allow(@cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
 
-      bag = Chef::DataBag.new
-      allow(Chef::DataBag).to receive(:new) { bag }
-      expect(bag).to receive(:create)
-
-      expect(@cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
+      expect(@cmd.name_args).to eq([@topo1_name])
+      expect(@topo1_item).to receive(:create)
       expect(@cmd).to receive(:upload_cookbooks)
-      expect(@cmd).to receive(:resource_exists?).with("nodes/node1").and_return(false)
-      expect(@cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
       expect(@cmd).to receive(:check_chef_env).with("test")
 
-      expect(@topo1_item).to receive(:create)
-
       expect(@cmd).not_to receive(:run_bootstrap)
-      expect(@cmd).not_to receive(:update_node).with(@merged_data['nodes'][0])
-      expect(@cmd).to receive(:update_node).with(@merged_data['nodes'][1])
+      expect(@cmd).to receive(:update_node).with(@merged_data['nodes'][0]).and_return(nil)
+      expect(@cmd).to receive(:update_node).with(@merged_data['nodes'][1]).and_return(true)
 
       @cmd.run
+      expect(@cmd.results[:bootstrapped]).to eq([])
+      expect(@cmd.results[:skipped]).to eq(['node1'])
+      expect(@cmd.results[:existed]).to eq(['node2'])
+      expect(@cmd.results[:failed]).to eq([])
 
     end
     
     it "disables upload and only bootstraps new nodes with --bootstrap and not --overwrite" do
-      cmd = Chef::Knife::TopoCreate.new(  [ 'topo1' ] )
-
-      cmd.name_args = [@topo1_name]
-      cmd.config[:data_bag] = @topobag_name
-      cmd.config[:bootstrap] = true
-      cmd.config[:disable_upload] = true
+      
+      cmd = KnifeTopo::TopoCreate.new([ 'topo1', '--bootstrap', '--disable-upload', "--data-bag=#{@topobag_name}" ])
     
-      bag = Chef::DataBag.new
-      allow(Chef::DataBag).to receive(:new) { bag }    
-      allow(bag).to receive(:create)
-      allow(cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
-      expect(cmd).not_to receive(:upload_cookbooks)
+      allow(cmd).to receive(:get_local_topo_path).and_return(@topo1_file.path)
       allow(cmd).to receive(:resource_exists?).with("nodes/node1").and_return(false)
       allow(cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
       allow(cmd).to receive(:check_chef_env).with("test")
-    
       allow(@topo1_item).to receive(:create)
-    
-      expect(cmd).to receive(:run_bootstrap).with(@merged_data['nodes'][0], anything(), false)
+
+      expect(cmd).not_to receive(:upload_cookbooks)
+      expect(cmd).to receive(:run_bootstrap).with(@merged_data['nodes'][0], anything(), false).and_return(true)
       expect(cmd).not_to receive(:run_bootstrap).with(@merged_data['nodes'][1], anything(), anything())
       expect(cmd).not_to receive(:update_node).with(@merged_data['nodes'][0])
-      expect(cmd).to receive(:update_node).with(@merged_data['nodes'][1])
+      expect(cmd).to receive(:update_node).with(@merged_data['nodes'][1]).and_return(true)
     
       cmd.run
+  #    expect(cmd.results[:bootstrapped]).to eq(['node1'])
+      expect(cmd.results[:failed]).to eq([])
+      expect(cmd.results[:existed]).to eq(['node2'])
+  #    expect(cmd.results[:skipped]).to eq([])
     
     end
     
     it "bootstraps existing node with --bootstrap and --overwrite if it has ssh_host, otherwise update" do
-      cmd = Chef::Knife::TopoCreate.new(  [ 'topo1' ] )
-    
-      cmd.name_args = [@topo1_name]
-      cmd.config[:data_bag] = @topobag_name
-      cmd.config[:bootstrap] = true
-      cmd.config[:overwrite] = true
-    
-      bag = Chef::DataBag.new
-      allow(Chef::DataBag).to receive(:new) { bag }    
-      allow(bag).to receive(:create)
-      allow(cmd).to receive(:load_from_file).with(@topobag_name, @topo1_name).and_return(@topo1_item)
+      
+      cmd = KnifeTopo::TopoCreate.new(  [ 'topo1', '--bootstrap', '--overwrite', "--data-bag=#{@topobag_name}" ] )
+
+      allow(cmd).to receive(:get_local_topo_path).and_return(@topo1_file.path)
       allow(cmd).to receive(:upload_cookbooks)
       allow(cmd).to receive(:resource_exists?).with("nodes/node1").and_return(true)
       allow(cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
@@ -169,10 +163,16 @@ describe Chef::Knife::TopoCreate do
     
       allow(@topo1_item).to receive(:create)
     
-      expect(cmd).to receive(:run_bootstrap).with(@merged_data['nodes'][0], anything(), true)
+      expect(cmd).to receive(:run_bootstrap).with(@merged_data['nodes'][0], anything(), true).and_return(true)
+      allow(cmd).to receive(:update_node).with(@merged_data['nodes'][0]).and_return(nil)
       expect(cmd).to receive(:update_node).with(@merged_data['nodes'][1])
     
       cmd.run
+      
+      expect(cmd.results[:bootstrapped]).to eq(['node1'])
+      expect(cmd.results[:skipped]).to eq([])
+      expect(cmd.results[:existed]).to eq(['node2'])
+      expect(cmd.results[:failed]).to eq([])
     
     end
   end
@@ -199,7 +199,7 @@ describe Chef::Knife::TopoCreate do
       expect(@cmd.loader).to receive(:file_exists_and_is_readable?).and_return(true)
       expect(@cmd.loader).to receive(:object_from_file).and_return(@cmd.loader.object_from_file(@topo1_file.path))
 
-      item = @cmd.load_from_file(@topobag_name, @topo1_name)
+      item = @cmd.load_local_topo_or_exit(@topo1_name)
       expect(item.raw_data).to eq(@topo1_data)
 
     end

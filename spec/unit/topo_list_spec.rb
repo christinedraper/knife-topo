@@ -16,32 +16,31 @@
 # limitations under the License.
 #
 
-require 'chef/knife'
-require_relative 'topology_loader'
+#
+# These tests are in need of cleaning up - big time!
+#
 
-module KnifeTopo
-  # knife topo list
-  class TopoList < Chef::Knife
-    deps do
-      require 'chef/data_bag'
-    end
+require 'rspec'
+require 'rspec/mocks'
+require File.expand_path('../../spec_helper', __FILE__)
+require 'chef/knife/topo_list'
 
-    banner 'knife topo list (options)'
+describe KnifeTopo::TopoList do
+  before :each do
+    Chef::Config[:node_name]  = "christine_test" 
+  end
+  describe "#run" do
+   let(:cmd) { KnifeTopo::TopoList.new(["--data-bag=topologies"]) }
+   it "lists topologies" do
+      bag = Chef::DataBag.new
+      allow(Chef::DataBag).to receive(:load).with("topologies")
+      allow(Chef::DataBag).to receive(:new) { bag }
+      expect(bag).to receive(:create)
+      allow(bag).to receive(:list).and_return(['something'])
+      expect(cmd).to receive(:format_list_for_display)
 
-    option(
-      :data_bag,
-      short: '-D DATA_BAG',
-      long: '--data-bag DATA_BAG',
-      description: 'The data bag the topologies are stored in'
-    )
-
-    include Chef::Knife::TopologyLoader
-
-    def run
-      bag = load_or_create_topo_bag
-      output(format_list_for_display(bag))
-    rescue Net::HTTPServerException => e
-      raise unless e.to_s =~ /^404/
+      output = cmd.run
     end
   end
 end
+
