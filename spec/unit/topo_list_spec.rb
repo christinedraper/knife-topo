@@ -27,20 +27,15 @@ require 'chef/knife/topo_list'
 
 describe KnifeTopo::TopoList do
   before :each do
-    Chef::Config[:node_name]  = "christine_test" 
+    Chef::Config[:node_name]  = 'christine_test'
   end
-  describe "#run" do
-   let(:cmd) { KnifeTopo::TopoList.new(["--data-bag=topologies"]) }
-   it "lists topologies" do
-      bag = Chef::DataBag.new
-      allow(Chef::DataBag).to receive(:load).with("topologies")
-      allow(Chef::DataBag).to receive(:new) { bag }
-      expect(bag).to receive(:create)
-      allow(bag).to receive(:list).and_return(['something'])
+  describe '#run' do
+    let(:cmd) { KnifeTopo::TopoList.new(['--data-bag=topologies']) }
+    it 'lists topologies' do
+      allow(Chef::DataBag).to receive(:load).and_return(['something'])
       expect(cmd).to receive(:format_list_for_display)
 
-      output = cmd.run
+      cmd.run
     end
   end
 end
-

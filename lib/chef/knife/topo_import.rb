@@ -17,16 +17,15 @@
 #
 
 require 'chef/knife'
-
-require_relative 'topology_helper'
-require_relative 'topology_loader'
-require_relative 'topo_cookbook_create'
+require 'chef/knife/cookbook_create'
+require 'chef/knife/topo/command_helper'
+require 'chef/knife/topo/loader'
 
 module KnifeTopo
   # knife topo import
   class TopoImport < Chef::Knife
     deps do
-      KnifeTopo::TopoCookbookCreate.load_deps
+      require 'chef/knife/topo/processor'
     end
 
     banner 'knife topo import [ TOPOLOGY_FILE ] (options)'
@@ -37,28 +36,28 @@ module KnifeTopo
       long: '--data-bag DATA_BAG',
       description: 'The data bag to store the topologies in'
     )
+    option(
+      :input_format,
+      long: '--input-format FORMAT',
+      description: 'The format to convert from (e.g. topo_v1)'
+    )
 
     # Make called command options available
     orig_opts = KnifeTopo::TopoImport.options
-    self.options = KnifeTopo::TopoCookbookCreate.options.merge(orig_opts)
+    self.options = Chef::Knife::CookbookCreate.options.merge(orig_opts)
 
-    include Chef::Knife::TopologyHelper
-    include Chef::Knife::TopologyLoader
+    include KnifeTopo::CommandHelper
+    include KnifeTopo::Loader
 
     def initialize(args)
       super
-      base_args = ['topo', 'cookbook', 'create', '']
-      @topo_cookbook_args = initialize_cmd_args(args, base_args)
+      @args = args
       @topo_file = @name_args[0] || 'topology.json'
-      @topo_cookbook_args[3] = @topo_file
-
-      # All called commands need to accept union of options
-      KnifeTopo::TopoCookbookCreate.options = options
     end
 
     def run
-      # load topology from the topologies file
-      @topo = load_topo_from_file_or_exit(@topo_file)
+      @topo = load_topo_from_file_or_exit(@topo_file, config[:input_format])
+      @processor = KnifeTopo::Processor.for_topo(@topo)
       create_topo_bag_dir
       import_topo
     end
@@ -71,7 +70,7 @@ module KnifeTopo
 
     def import_topo
       write_topo_to_file
-      run_create_cookbook
+      do_create_artifacts
 
       ui.info "Imported topology: #{@topo.display_info}"
     end
@@ -81,13 +80,15 @@ module KnifeTopo
       File.open(path, 'w') do |f|
         f.write(Chef::JSONCompat.to_json_pretty(@topo.raw_data))
         f.close
-        ui.info "Created topology data bag in  #{path}"
+        ui.info "Created topology data bag: #{path}"
       end
     end
 
-    def run_create_cookbook
-      # run topo cookbook to generate the cookbooks for this topology
-      run_cmd(KnifeTopo::TopoCookbookCreate, @topo_cookbook_args)
+    def do_create_artifacts
+      @processor.generate_artifacts(
+        'cmd_args' => @args,
+        'cmd' => self
+      )
     end
   end
 end

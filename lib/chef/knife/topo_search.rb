@@ -15,13 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-require_relative 'topology_helper'
 require 'chef/knife/search'
+require 'chef/knife/topo/command_helper'
 
 module KnifeTopo
   # knife topo search
   class TopoSearch < Chef::Knife::Search
+    deps do
+    end
+
     banner 'knife topo search [ QUERY ] (options)'
 
     option(
@@ -41,7 +43,7 @@ module KnifeTopo
     orig_opts = KnifeTopo::TopoSearch.options
     self.options = (Chef::Knife::Search.options).merge(orig_opts)
 
-    include Chef::Knife::TopologyHelper
+    include KnifeTopo::CommandHelper
 
     def run
       setup_query

@@ -17,14 +17,14 @@
 #
 
 require 'chef/knife'
-require_relative 'topology_loader'
-require_relative 'topology_helper'
+require 'chef/knife/topo/loader'
+require 'chef/knife/topo/command_helper'
 
 module KnifeTopo
   # knife topo delete
   class TopoDelete < Chef::Knife
     deps do
-      require 'chef/data_bag'
+      require 'chef/node'
     end
 
     banner 'knife topo delete TOPOLOGY (options)'
@@ -36,8 +36,8 @@ module KnifeTopo
       description: 'The data bag the topologies are stored in'
     )
 
-    include Chef::Knife::TopologyHelper
-    include Chef::Knife::TopologyLoader
+    include KnifeTopo::CommandHelper
+    include KnifeTopo::Loader
 
     def run
       validate_args

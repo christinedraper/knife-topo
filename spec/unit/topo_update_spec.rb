@@ -16,53 +16,74 @@
 # limitations under the License.
 #
 
-#
-
 require 'rspec'
 require 'rspec/mocks'
 require File.expand_path('../../spec_helper', __FILE__)
 require 'chef/knife/topo_update'
 
-#KnifeTopo::TopoCreate.load_deps
-
 describe KnifeTopo::TopoUpdate do
   before :each do
-    Chef::Config[:node_name]  = "christine_test"
-    @cmd = KnifeTopo::TopoUpdate.new([ 'knife', 'topo', 'update', 'topo1' ])
+    Chef::Config[:node_name]  = 'christine_test'
+    @cmd = KnifeTopo::TopoUpdate.new(%w(knife  topo  update  topo1))
 
     # setup test data bags
     @topobag_name = 'testsys_test'
-    @topo1_name = "topo1"
+    @topo1_name = 'topo1'
     @cmd.config[:data_bag] = @topobag_name
 
     @topo1_origdata = {
-      "id" => "topo1",
-      "name" => "topo1",
-      "nodes" => [
-      {
-      "name" => "node1"
-      },
-      {
-      "name" => "node2",
-      "chef_environment" => "test",
-      "normal" => { "anotherAttr" => "anotherValue" }
-      }]
+      'id' => 'topo1',
+      'name' => 'topo1',
+      'nodes' => [
+        {
+          'name' => 'node1'
+        },
+        {
+          'name' => 'node2',
+          'chef_environment' => 'test',
+          'normal' => { 'anotherAttr' => 'anotherValue' }
+        }
+      ]
     }
     @topo1_newdata = {
-      "id" => "topo1",
-      "name" => "topo1",
-      "nodes" => [
-      {
-      "name" => "node1",
-      "run_list" => [ 'recipe[apt]', 'role[ypo::db]'  ]
-      },
-      {
-      "name" => "node2",
-      "chef_environment" => "dev",
-        "normal" => { "anotherAttr" => "newValue" }
-      }]
+      'id' => 'topo1',
+      'name' => 'topo1',
+      'nodes' => [
+        {
+          'name' => 'node1',
+          'run_list' => ['recipe[apt]', 'role[ypo::db]', 'recipe[a::default]'],
+          'tags' => ['tag1'],
+          'chef_environment' => 'new_test'
+        },
+        {
+          'name' => 'node2',
+          'chef_environment' => 'dev',
+          'normal' => { 'anotherAttr' => 'newValue' }
+        }
+      ]
     }
-    
+    @topo1_update = {
+      'id' => 'topo1',
+      'name' => 'topo1',
+      'nodes' => [
+        {
+          'name' => 'node1',
+          'run_list' => ['recipe[apt]', 'role[ypo::db]', 'recipe[a::default]'],
+          'tags' => ['tag1'],
+          'chef_environment' => 'new_test',
+          'normal' => { 'topo' => { 'name' => 'topo1' } }
+        },
+        {
+          'name' => 'node2',
+          'chef_environment' => 'dev',
+          'normal' => {
+            'anotherAttr' => 'newValue',
+            'topo' => { 'name' => 'topo1' }
+          }
+        }
+      ]
+    }
+
     @topo_bag = Chef::DataBag.new
     allow(Chef::DataBag).to receive(:new) { @topo_bag }
     allow(Chef::DataBag).to receive(:load).with(@topobag_name) { @topo_bag }
@@ -73,44 +94,75 @@ describe KnifeTopo::TopoUpdate do
     @topo1_item = Chef::Topology.new
     @topo1_item.raw_data = @topo1_newdata
     @topo1_item.data_bag(@topobag_name)
- 
-    @exception_404 =   Net::HTTPServerException.new("404 Not Found", Net::HTTPNotFound.new("1.1", "404", "Not Found"))
 
+    @exception_404 = Net::HTTPServerException.new(
+      '404 Not Found', Net::HTTPNotFound.new('1.1', '404', 'Not Found')
+    )
   end
-  describe "#run" do
-    it "loads topology and updates objects on server" do
+
+  describe '#run' do
+    it 'loads topology and updates objects on server' do
       @cmd.name_args = [@topo1_name]
 
-      allow(@cmd).to receive(:resource_exists?).with("nodes/node1").and_return(false)
-      allow(@cmd).to receive(:resource_exists?).with("nodes/node2").and_return(true)
-      expect(@cmd).to receive(:load_local_topo_or_exit).with(@topo1_name).and_return(@topo1_item)
-      expect(@cmd).to receive(:load_topo_from_server).with(@topo1_name).and_return(@orig_item)
-      expect(@cmd).to receive(:upload_cookbooks)
+      allow(@cmd).to receive(
+        :resource_exists?
+      ).with('nodes/node1').and_return(false)
+      allow(@cmd).to receive(
+        :resource_exists?
+      ).with('nodes/node2').and_return(true)
+      expect(@cmd).to receive(
+        :load_local_topo_or_exit
+      ).with(@topo1_name).and_return(@topo1_item)
+      expect(@cmd).to receive(
+        :load_topo_from_server
+      ).with(@topo1_name).and_return(@orig_item)
+      expect(@cmd).to receive(:upload_artifacts)
 
       expect(@topo1_item).to receive(:save)
 
-      expect(@cmd).to receive(:update_node).with(@topo1_newdata['nodes'][0])
-      expect(@cmd).to receive(:update_node).with(@topo1_newdata['nodes'][1])
+      expect(@cmd).to receive(:update_node).with(@topo1_update['nodes'][0])
+      expect(@cmd).to receive(:update_node).with(@topo1_update['nodes'][1])
 
       @cmd.run
-      
-      expect(@topo1_item['nodes'][0]['normal']['topo']['name']).to eq("topo1")
-
     end
   end
 
-  describe "#update_node" do
-    it "updates an existing node" do
-
+  describe '#update_node' do
+    it 'updates an existing node' do
       node = Chef::Node.new
       expect(Chef::Node).to receive(:load).and_return(node)
       expect(node).to receive(:save)
-      expect(@cmd).to receive(:check_chef_env).with("dev")
-      
-      @cmd.update_node(@topo1_newdata['nodes'][1])
+      expect(@cmd).to receive(:check_chef_env).with('new_test')
+      data = @topo1_update['nodes'][0]
+      expect(@cmd).to receive(
+        :update_node_with_values
+      ).with(node, data).and_return(%w(normal  run_list  chef_environment tags))
+      @cmd.update_node(@topo1_update['nodes'][0])
+    end
 
+    it 'doesnt update things unchanged' do
+      node = Chef::Node.new
+      expect(Chef::Node).to receive(:load).and_return(node)
+      @cmd.update_node_with_values(node, @topo1_update['nodes'][0])
+      expect(node).not_to receive(:save)
+      expect(@cmd).to receive(:check_chef_env).with('new_test')
+      @cmd.update_node(@topo1_update['nodes'][0])
     end
   end
-  
-end
 
+  describe '#update_node_with_values' do
+    it 'updates an existing node and reports changes' do
+      node = Chef::Node.new
+
+      updated = @cmd.update_node_with_values(node, @topo1_update['nodes'][0])
+      expect(updated).to eq(%w(normal  run_list  chef_environment tags))
+    end
+
+    it 'doesnt report things unchanged' do
+      node = Chef::Node.new
+      @cmd.update_node_with_values(node, @topo1_update['nodes'][0])
+      updated = @cmd.update_node_with_values(node, @topo1_update['nodes'][0])
+      expect(updated).to eq(false)
+    end
+  end
+end

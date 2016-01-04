@@ -17,46 +17,37 @@
 #
 
 require 'chef/knife'
-require_relative 'topo_create'
+require 'chef/knife/topo_create'
 
 module KnifeTopo
   # knife topo update
   class TopoUpdate < KnifeTopo::TopoCreate
     deps do
-      KnifeTopo::TopoCookbookUpload.load_deps
-      Chef::Knife::Bootstrap.load_deps
+      KnifeTopo::TopoCreate.load_deps
     end
-
     banner 'knife topo update TOPOLOGY (options)'
 
     # Make called command options available
     orig_opts = KnifeTopo::TopoCreate.options
-    upload_opts = KnifeTopo::TopoCookbookUpload.options
-    merged_opts = (KnifeTopo::TopoBootstrap.options).merge(upload_opts)
-    self.options = merged_opts.merge(orig_opts)
+    bootstrap_opts = KnifeTopo::TopoBootstrap.options
+    self.options = bootstrap_opts.merge(orig_opts)
 
     def run
       validate_args
       load_topo_from_server_or_exit(@topo_name)
-      @topo = update_topo
-      check_chef_env(@topo.chef_environment) if @topo.chef_environment
-      upload_cookbooks(@topo_upload_args) unless config[:disable_upload]
+      update_topo
 
-      # update any existing nodes
-      nodes = merge_topo_properties(@topo['nodes'], @topo)
-
-      nodes.each do |node_data|
-        bootstrap_or_update_node(node_data)
-      end
+      check_chef_env(@topo['chef_environment'])
+      upload_artifacts unless config[:disable_upload]
+      update_nodes
 
       report
     end
 
     def update_topo
       # Load the topology data & update the topology bag
-      topo_item = load_local_topo_or_exit(@topo_name)
-      topo_item.save
-      topo_item
+      @topo = load_local_topo_or_exit(@topo_name)
+      @topo.save
     end
   end
 end

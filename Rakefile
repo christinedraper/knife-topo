@@ -1,17 +1,17 @@
-require "bundler/gem_tasks"
-
+require 'bundler/gem_tasks'
 
 begin
   require 'rspec/core/rake_task'
 
-  task :default => :spec
+  task default: :spec
 
-  desc "Run all specs in spec directory"
+  desc 'Run all specs in spec directory'
   RSpec::Core::RakeTask.new(:spec) do |t|
-    puts "Looking for tests"
+    puts 'Looking for tests'
     t.pattern = 'spec/**/*_spec.rb'
   end
 
 rescue LoadError
-  STDERR.puts "\n*** RSpec not available. (sudo) gem install rspec to run unit tests. ***\n\n"
+  STDERR.puts "\n*** RSpec not available. "\
+    "(sudo) gem install rspec to run unit tests. ***\n\n"
 end

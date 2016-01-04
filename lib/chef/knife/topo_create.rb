@@ -17,17 +17,18 @@
 #
 
 require 'chef/knife'
-require_relative 'topology_loader'
-require_relative 'topology_helper'
-require_relative 'topo_bootstrap'
-require_relative 'topo_cookbook_upload'
+require 'chef/knife/topo_bootstrap'
+require 'chef/knife/cookbook_upload' unless defined? Chef::Knife::CookbookUpload
+require 'chef/knife/topo/loader'
+require 'chef/knife/topo/command_helper'
+require 'chef/knife/topo/node_update_helper'
 
 module KnifeTopo
   # knife topo create
   class TopoCreate < KnifeTopo::TopoBootstrap
     deps do
-      KnifeTopo::TopoCookbookUpload.load_deps
-      Chef::Knife::Bootstrap.load_deps
+      require 'chef/knife/topo/processor'
+      KnifeTopo::TopoBootstrap.load_deps
     end
 
     banner 'knife topo create TOPOLOGY (options)'
@@ -48,61 +49,50 @@ module KnifeTopo
 
     # Make called command options available
     orig_opts = KnifeTopo::TopoCreate.options
-    upload_opts = KnifeTopo::TopoCookbookUpload.options
+    upload_opts = Chef::Knife::CookbookUpload.options
     merged_opts = (KnifeTopo::TopoBootstrap.options).merge(upload_opts)
     self.options = merged_opts.merge(orig_opts)
 
-    include Chef::Knife::TopologyHelper
-    include Chef::Knife::TopologyLoader
+    include KnifeTopo::CommandHelper
+    include KnifeTopo::NodeUpdateHelper
+    include KnifeTopo::Loader
 
     def initialize(args)
       super
-      @topo_upload_args  = initialize_cmd_args(
-        args,
-        ['topo', 'cookbook', 'upload', @name_args[0]]
-      )
-
-      # All called commands need to accept union of options
-      KnifeTopo::TopoCookbookUpload.options = options
+      @args  = args
     end
 
     def bootstrap_msgs
-      {
-        bootstrapped: 'Bootstrapped %{num} nodes [ %{list} ]',
-        skipped: 'Skipped %{num} nodes [ %{list} ] ' \
-          'because they had no ssh_host information',
-        existed: 'Updated %{num} nodes [ %{list} ] because they ' \
-          "already exist.\n"\
-          "Specify --overwrite to re-bootstrap existing nodes. \n",
-        failed: '%{num} nodes [ %{list} ] failed to bootstrap due to errors'
-      }
+      msgs = super.dup
+      msgs[:existed] = 'Updated but did not bootstrap %{num} existing nodes '\
+      "[ %{list} ].\n Specify --overwrite to re-bootstrap existing nodes. \n"
+      msgs
     end
 
     def non_bootstrap_msgs
       {
-        existed: 'Updated %{num} nodes [ %{list} ]',
+        existed: 'Applied updates (if any) to %{num} nodes [ %{list} ]',
+        skipped_ssh: 'Unexpected error skipped_ssh',
         skipped: 'Skipped %{num} nodes [ %{list} ] because they do not exist',
-        bootstrapped: 'Unexpected error',
-        failed: 'Unexpected error'
+        bootstrapped: 'Unexpected error bootstrapped',
+        failed: 'Unexpected error failed'
       }
     end
 
     def run
       validate_args
-      @topo = create_or_update_topo
+      create_or_update_topo
 
       # make sure env and cookbooks are in place
-      check_chef_env(@topo.chef_environment) if @topo.chef_environment
-      upload_cookbooks(@topo_upload_args) unless config[:disable_upload]
-
-      # update any existing nodes
-      nodes = merge_topo_properties(@topo.nodes, @topo)
-
-      nodes.each do |node_data|
-        bootstrap_or_update_node(node_data)
-      end
+      check_chef_env(@topo['chef_environment'])
+      upload_artifacts unless config[:disable_upload]
+      update_nodes
 
       report
+    end
+
+    def processor
+      @processor ||= KnifeTopo::Processor.for_topo(@topo)
     end
 
     def validate_args
@@ -114,25 +104,30 @@ module KnifeTopo
 
     def create_or_update_topo
       # Load the topology data & create the topology bag
-      topo = load_local_topo_or_exit(@topo_name)
-      load_or_create_topo_bag
+      @topo = load_local_topo_or_exit(@topo_name)
+      create_topo_bag
 
       # Add topology item to the data bag on the server
-      topo.create
-      topo
+      @topo.create
     rescue Net::HTTPServerException => e
       raise unless e.to_s =~ /^409/
-      update_topo(topo)
+      confirm_and_update_topo
     end
 
-    def update_topo(topo)
-      version = topo.topo_version
+    def update_nodes
+      nodes = processor.generate_nodes
+      nodes.each do |node_data|
+        bootstrap_or_update_node(node_data)
+      end
+    end
+
+    def confirm_and_update_topo
+      version = @topo.topo_version
       to_version_str = " to version #{version}"
       msg = "Topology #{@topo_name} already exists - do you want to " \
         "update it#{to_version_str  if version}"
       ui.confirm(msg, true, false)
-      topo.save
-      topo
+      @topo.save
     end
 
     def bootstrap_or_update_node(node_data)
@@ -146,6 +141,10 @@ module KnifeTopo
           @results[:skipped] << node_name
         end
       end
+    end
+
+    def upload_artifacts
+      processor.upload_artifacts('cmd' => self, 'cmd_args' => @args)
     end
   end
 end

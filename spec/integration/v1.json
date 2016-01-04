@@ -1,4 +1,4 @@
-[{
+{
 	"name": "test1",
 	"chef_environment": "test",
 	"tags": 
@@ -121,19 +121,4 @@
 			]
 		}
 	]
-},
-{
-	"name": "test2",
-	"chef_environment": "test",
-	"tags": 
-	[
-		"testsys"
-	],
-	"normal": 
-	{
-		"owner": "John Sweitzer"
-	},
-	"nodes": 
-	{
-	}
-}]
+}

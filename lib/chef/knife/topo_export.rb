@@ -17,8 +17,10 @@
 #
 
 require 'chef/knife'
-
-require_relative 'topology_loader'
+require 'chef/knife/topo/loader'
+require 'chef/knife/topo/consts'
+require 'chef/knife/topo/command_helper'
+require 'chef/knife/topo/consts'
 
 # NOTE: This command exports to stdout
 
@@ -51,19 +53,13 @@ module KnifeTopo
       default: 'topo1'
     )
 
-    include Chef::Knife::TopologyLoader
-
-    def most_common(vals)
-      return if vals.length == 0
-      vals.group_by do |val|
-        val
-      end.values.max_by(&:size).first
-    end
+    include KnifeTopo::Loader
+    include KnifeTopo::CommandHelper
 
     def run
-      unless %w(default normal override).include?(config[:min_priority])
-        ui.warn("--min-priority should be one of 'default', "\
-          "'normal' or 'override'")
+      unless KnifeTopo::PRIORITIES.include?(config[:min_priority])
+        ui.warn('--min-priority should be one of ' \
+          "#{KnifeTopo::PRIORITIES.join(', ')}")
       end
       @topo_name = config[:topo]
       @node_names = @name_args
@@ -107,11 +103,16 @@ module KnifeTopo
         'name' => @topo_name || 'topo1',
         'chef_environment' => '_default',
         'tags' => [],
-        'nodes' => @node_names.length == 0 ? [empty_node('node1')] : [],
-        'cookbook_attributes' => [{
-          'cookbook' =>  @topo_name || 'topo1',
-          'filename' => 'topology'
-        }]
+        'strategy' => 'via_cookbook',
+        'strategy_data' => default_strategy_data,
+        'nodes' => @node_names.length == 0 ? [empty_node('node1')] : []
+      }
+    end
+
+    def default_strategy_data
+      {
+        'cookbook' =>  @topo_name || 'topo1',
+        'filename' => 'topology'
       }
     end
 
@@ -128,30 +129,10 @@ module KnifeTopo
 
     # get actual node properties for export
     def node_export(node_name)
-      load_node_data(node_name)
+      load_node_data(node_name, config[:min_priority])
     rescue Net::HTTPServerException => e
       raise unless e.to_s =~ /^404/
       empty_node(node_name)
-    end
-
-    def load_node_data(node_name)
-      node_data = {}
-      node = Chef::Node.load(node_name)
-      %w(name tags chef_environment run_list).each do |key|
-        node_data[key] = node.send(key)
-      end
-
-      %w(default normal override).each do |key|
-        node_data[key] = node.send(key) if meets_min(key)
-      end
-      node_data
-    end
-
-    def meets_min(pri)
-      min = config[:min_priority]
-      pri == 'override' ||
-        (pri == 'normal' && min == 'default') ||
-        pri == min
     end
 
     # put node details in node array, overwriting existing details

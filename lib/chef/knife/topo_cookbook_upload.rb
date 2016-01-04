@@ -17,18 +17,14 @@
 #
 
 require 'chef/knife'
-require_relative 'topology_loader'
-require_relative 'topology_helper'
-
-# only require if not already defined (to prevent warning
-# about already initialized constants)
+require 'chef/knife/topo/loader'
 require 'chef/knife/cookbook_upload' unless defined? Chef::Knife::CookbookUpload
 
 module KnifeTopo
   # knife topo cookbook upload
   class TopoCookbookUpload < Chef::Knife
     deps do
-      Chef::Knife::CookbookUpload.load_deps
+      require 'chef/knife/topo/processor'
     end
 
     banner 'knife topo cookbook upload TOPOLOGY (options)'
@@ -44,12 +40,11 @@ module KnifeTopo
     self.options = (Chef::Knife::CookbookUpload.options).merge(
       TopoCookbookUpload.options)
 
-    include Chef::Knife::TopologyHelper
-    include Chef::Knife::TopologyLoader
+    include KnifeTopo::Loader
 
     def initialize(args)
       super
-      @cookbook_upload_args  = initialize_cmd_args(args, %w(cookbook upload))
+      @args  = args
 
       # All called commands need to accept union of options
       Chef::Knife::CookbookUpload.options = options
@@ -59,11 +54,11 @@ module KnifeTopo
       validate_args
 
       # Load the topology data
-      data = load_local_topo_or_exit(@topo_name).raw_data
+      @topo = load_local_topo_or_exit(@topo_name)
 
-      # Run cookbook upload command on the topology cookbooks
-      cookbooks = data['cookbook_attributes'] || []
-      upload_cookbooks(cookbooks)
+      # Run cookbook upload command on the topology cookbook
+      @processor = KnifeTopo::Processor.for_topo(@topo)
+      @processor.upload_artifacts('cmd' => self, 'cmd_args' => @args)
     end
 
     def validate_args
@@ -73,19 +68,6 @@ module KnifeTopo
         exit 1
       end
       @topo_name = @name_args[0]
-    end
-
-    def upload_cookbooks(cookbook_specs)
-      n = []
-      pos = 2
-      cookbook_specs.each do |entry|
-        cb_name = entry['cookbook']
-        @cookbook_upload_args[pos] = cb_name unless n.include?(cb_name)
-        n << cb_name
-        pos += 1
-      end
-      run_cmd(Chef::Knife::CookbookUpload, @cookbook_upload_args)
-      ui.info("Uploaded #{n.length} topology cookbooks [#{n.join(', ')}]")
     end
   end
 end

@@ -17,10 +17,16 @@
 #
 
 require 'chef/data_bag_item'
+require 'chef/topo/converter'
+require 'chef/mixin/deep_merge'
 
 class Chef
   # Topology
   class Topology < Chef::DataBagItem
+    attr_accessor :strategy
+
+    PRIORITIES = %w(default force_default normal override force_override)
+
     # Have to override and say this is a data bag json_class
     # or get error on upload re 'must specify id'
     def to_json(*a)
@@ -33,54 +39,83 @@ class Chef
       }
       Chef::JSONCompat.to_json(result, *a)
     end
-    
+
+    def self.convert_from(format, data)
+      from_json((Chef::Topo::Converter.convert(format, data)))
+    end
+
     def self.from_json(data)
       topo = new
-      topo.raw_data = clean_topo_data(data)
+      topo.raw_data = data
       topo
     end
 
     # Make sure the JSON has an id and other expected fields
-    def self.clean_topo_data(data)
-      topo_name = data['name'] || data['id']
-      data['id'] ||= topo_name
-      data['name'] ||= topo_name
-      data
+    def raw_data=(new_data)
+      new_data['id'] ||= new_data['name']
+      super
+      @strategy = raw_data['strategy'] || 'direct_to_node'
     end
 
     def display_info
+      buildstamp = raw_data['buildstamp']
       info = buildstamp ? ' buildstamp: ' + buildstamp : ''
       display_name + info
     end
 
     def display_name
       version = topo_version ? ' version: ' + topo_version : ''
-      raw_data['name'] + version
+      topo_name + version
     end
-    
-    # Topology version
+
     def topo_version
       version = raw_data['version']
       if version
-        version = version + '-' + buildid if buildid
+        version = version + '-' + raw_data['buildid'] if raw_data['buildid']
       end
       version
     end
-    
-    def chef_environment
-      raw_data['chef_environment']
+
+    def topo_name
+      raw_data['name'] || 'undefined'
     end
-    
-    def buildid
-      raw_data['buildid']
-    end
-    
-    def buildstamp
-      raw_data['buildstamp']
-    end
-    
+
     def nodes
-      raw_data['nodes']
+      raw_data['nodes'] || []
+    end
+
+    # nodes with topo properties merged in
+    def merged_nodes
+      nodes.map do |n|
+        Chef::Mixin::DeepMerge.merge(node_defaults, n)
+      end
+    end
+
+    def node_defaults
+      defaults = {}
+      %w(chef_environment tags).each do |k|
+        defaults[k] = raw_data[k] if raw_data[k]
+      end
+
+      PRIORITIES.reverse_each do |p|
+        a = default_attrs(p)
+        defaults[p] = a if a
+      end
+      # Make sure we're not sharing objects
+      Mash.from_hash(Marshal.load(Marshal.dump(defaults)))
+    end
+
+    def default_attrs(priority)
+      return raw_data[priority] unless priority == 'normal'
+      add_topo_attrs(raw_data['normal'])
+    end
+
+    def add_topo_attrs(attrs)
+      a = attrs || {}
+      a['topo'] ||= {}
+      a['topo']['name'] = topo_name
+      a['topo']['node_type'] = a['node_type'] if a['node_type']
+      a
     end
   end
 end

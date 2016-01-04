@@ -17,13 +17,12 @@
 #
 
 require 'chef/knife'
-require_relative 'topology_loader'
+require 'chef/knife/topo/loader'
 
 module KnifeTopo
   # knife topo list
   class TopoList < Chef::Knife
     deps do
-      require 'chef/data_bag'
     end
 
     banner 'knife topo list (options)'
@@ -35,11 +34,10 @@ module KnifeTopo
       description: 'The data bag the topologies are stored in'
     )
 
-    include Chef::Knife::TopologyLoader
+    include KnifeTopo::Loader
 
     def run
-      bag = load_or_create_topo_bag
-      output(format_list_for_display(bag))
+      output(format_list_for_display(list_topo_bag))
     rescue Net::HTTPServerException => e
       raise unless e.to_s =~ /^404/
     end

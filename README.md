@@ -16,19 +16,21 @@ through a single (json) configuration file. It may also be useful
 if you are regularly bringing up multi-node systems with similar 
 topologies but differences in their configuration details.
 
+This plugin can be used in conjunction with the 
+[topo cookbook](http://github.com/christinedraper/topo-cookbook)
+to configure dynamically deployed topologies of nodes (e.g. in AWS).
+In this approach, use knife-topo to set up the topology details.
+Use the 'topo' cookbook to let nodes pull their own detailed configuration
+from the topology data bag on the Chef server. 
+
 # Changes from V1 #
 
 ## Attribute setting method
 
 V2 introduces the notion of an `attribute_setting_method`. Instead of
-specifying normal node attributes or cookbook attributes
-with a specific priority, you specify one set of attributes for the
-node and the method by which they should be set on the node 
-(e.g. 'direct' or 'via_cookbook'). You no longer specify attribute
-priorities (this is left to the attribute setting method). However,
-you can specify a set of 'persistent_attributes' which the attribute
-setting method will set as 'normal' priority (or other future Chef
-mechanism).
+specifying node attributes or cookbook attributes separately, you 
+specify one set of attributes for the node and the method by which 
+they should be set on the node (e.g. 'direct_to_node' or 'via_cookbook'). 
 
 V1 topology JSON files can be converted to V2 by importing them and
 then exporting them.
@@ -37,9 +39,18 @@ The purpose of this change is to make it easier to support new
 methods of setting attributes such as policy files, and also making it
 easier to switch between methods.
 
+## Node type
+
+A node type can be specified for a node, and will be added as a
+`normal['topo']['node_type']` node attribute. The node type is used
+by the 'topo' cookbook to identify the right configuration to use. It
+is also used in the 'via cookbook' method to support attributes that
+vary by node type.
+
 ## One topology per file
 
-To reduce complexity, V2 no longer supports multiple topologies in a JSON file.
+To reduce complexity, V2 no longer supports multiple topologies in a 
+JSON file.
 
 # Installation #
 
@@ -49,12 +60,14 @@ Install knife-topo as a gem
 
 # Usage #
 
-Define one or more topologies in a [topology file](#topology-file). Import
+Define each topology in a [topology file](#topology-file). Import
 that file into your Chef workspace using [knife topo import](#import), 
-then create and bootstrap the nodes using a single command [knife topo create](#create). 
-Update the topology file as the configuration changes (e.g., when you 
-need to update software versions), import those changes and run one command
-[knife topo update](#update) to update all of the nodes.
+then create the topology [knife topo create](#create), specifying
+the '--bootstrap' option if you want to bootstrap all of the nodes. 
+
+Update the topology file as the configuration changes, import those 
+changes [knife topo import](#import) and run 
+[knife topo update](#update) to update the topology.
 
 
 # Getting Started #
@@ -100,14 +113,10 @@ an array defining topology cookbook attributes.
         "name": "test1",
         "chef_environment": "test",
         "tags": ["system_sys1", "phase_test" ],
-        "attributes": {
+        "node_type": "appserver",
+        "normal": {
           "owner": {
             "name": "Christine Draper"
-          }
-        },
-        "persistent_attributes" : {
-          "topo": {
-            "node_type": "appserver"
           }
         },
         "nodes" : [
