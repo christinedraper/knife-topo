@@ -112,7 +112,7 @@ describe KnifeTopo::TopoCreate do
     it 'loads from bag files' do
       expect(@cmd.loader).to receive(
         :file_exists_and_is_readable?
-      ).and_return(true)
+      ).at_least(:once).and_return(true)
       expect(@cmd.loader).to receive(
         :object_from_file
       ).and_return(@cmd.loader.object_from_file(@topo1_file.path))

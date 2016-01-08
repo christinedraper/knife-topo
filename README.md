@@ -28,12 +28,9 @@ from the topology data bag on the Chef server.
 ## Attribute setting strategy
 
 V2 introduces the notion of an attribute setting strategy. Instead of
-specifying node attributes or cookbook attributes separately, you 
-specify one set of attributes for the node and the method by which 
+specifying node attributes and cookbook attributes separately, you 
+specify one set of attributes and the method by which 
 they should be set on the node (e.g. 'direct_to_node' or 'via_cookbook'). 
-
-V1 topology JSON files can be converted to V2 by importing them and
-then exporting them.
 
 The purpose of this change is to make it easier to support new
 methods of setting attributes such as policy files, and also making it
@@ -50,6 +47,13 @@ vary by node type.
 
 To reduce complexity, V2 no longer supports multiple topologies in a 
 JSON file.
+
+## V1 -> V2 Migration
+
+V1 topology JSON files can be converted to V2 by importing them and
+then exporting them. knife-topo will auto-detect V1 format files on 
+import. You can also explicitly specify the input format using
+`knife topo import sometopo.json --input-format 'topo_v1'`
 
 # Installation #
 

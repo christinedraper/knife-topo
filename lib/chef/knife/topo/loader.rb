@@ -33,8 +33,11 @@ module KnifeTopo
     end
 
     def load_local_topo_or_exit(topo_name)
-      topo_file = get_local_topo_path(topo_name)
-      load_topo_from_file_or_exit(topo_file)
+      filepath = get_local_topo_path(topo_name)
+      msg = "Topology file #{filepath} not found - use " \
+        "'knife topo import' first"
+      check_file(filepath, msg)
+      load_topo_from_file_or_exit(filepath)
     end
 
     def load_topo_from_file_or_exit(filepath, format = nil)
@@ -46,10 +49,9 @@ module KnifeTopo
       topo
     end
 
-    def check_file(filepath)
+    def check_file(filepath, msg = nil)
       return if loader.file_exists_and_is_readable?(filepath)
-      msg = "Topology file #{filepath} not found - " \
-        "use 'knife topo import' first"
+      msg ||= "Topology file #{filepath} not found"
       ui.fatal(msg)
       exit(1)
     end
