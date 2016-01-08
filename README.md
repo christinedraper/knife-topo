@@ -25,9 +25,9 @@ from the topology data bag on the Chef server.
 
 # Changes from V1 #
 
-## Attribute setting method
+## Attribute setting strategy
 
-V2 introduces the notion of an `attribute_setting_method`. Instead of
+V2 introduces the notion of an attribute setting strategy. Instead of
 specifying node attributes or cookbook attributes separately, you 
 specify one set of attributes for the node and the method by which 
 they should be set on the node (e.g. 'direct_to_node' or 'via_cookbook'). 
@@ -41,8 +41,7 @@ easier to switch between methods.
 
 ## Node type
 
-A node type can be specified for a node, and will be added as a
-`normal['topo']['node_type']` node attribute. The node type is used
+A node type can be specified for a node. The node type is used
 by the 'topo' cookbook to identify the right configuration to use. It
 is also used in the 'via cookbook' method to support attributes that
 vary by node type.
@@ -131,6 +130,33 @@ The `chef-environment` and `normal` attributes defined
 here will be applied to all nodes in the topology, unless alternative
 values are provided for a specific node.  The `tags` 
 will be added to each node. 
+
+### Attribute setting strategy
+
+The default strategy for setting attributes is `direct_to_node`. 
+In this strategy, normal attributes are set directly on the nodes when
+the topology is created, bootstrapped or updated. Attributes with
+other priorities are ignored.
+
+The `strategy` field can be set to 'via_cookbook', in which case
+additional `strategy_data` can be provided to specify a cookbok
+and attribute filename.
+```
+    {
+        "name": "test1",
+        ...
+        "strategy" : "via_cookbook",
+        "strategy_data": {
+          "cookbook": "testsys_test1",
+          "filename": "softwareversion",
+      }
+    }
+```
+
+In this strategy, the cookbook and attribute file are generated
+in the local workspace when the topology is imported, and uploaded
+to the server when the topology is created or updated. Attributes
+can have any valid priority.
     
 ## Node List <a name="node-list"></a>
 Each topology contains a list of `nodes`.
@@ -142,15 +168,12 @@ Each topology contains a list of `nodes`.
         "nodes": [
            {
                 "name": "buildserver01",
+                "node_type" : "buildserver",
                 "ssh_host": "192.168.1.201",
                 "ssh_port": "2224",
                 "chef_environment": "dev",
                 "run_list": ["role[base-ubuntu]", "ypo::db", "recipe[ypo::appserver]"],
-                "normal": {
-                  "topo" : {
-                    node_type": "buildserver"
-                  }
-                },
+                ... node attributes, see below ...,
                 "tags": ["build"]
             },
             ...
@@ -158,14 +181,18 @@ Each topology contains a list of `nodes`.
     }
 ```
 Within `nodes`, the `name` field is the node name that will be used in Chef.
-The fields `chef_environment`, `run_list`, `tags` and the attributes
-within `normal` will also be applied to the node in Chef. All of these
+The fields `chef_environment`, `run_list` and `tags` 
+will also be applied to the node in Chef. All of these
 fields are optional. 
 
-The `ssh_host` and `ssh_port` are optional fields that are used to
+The `node_type` sets the node attribute `normal['topo']['node_type']`.
+This attribute is used in the 'via_cookbook' strategy to specify
+attributes that apply to only nodes of that type. 
+
+The `ssh_host` and `ssh_port` fields are used to
 bootstrap a node.
 
-## Topology Cookbook Attributes <a name="cookbook-attributes"></a>
+## Node Attributes <a name="node-attributes"></a>
 
 Each topology may have attributes that are set via
 an attribute file in a topology-specific cookbook. Each
@@ -173,15 +200,14 @@ attribute file is described in an entry in the 'cookbook_attributes'
 array.
 
 ```
-	"cookbook_attributes": [
+	"nodes": [
 		{
-			"cookbook": "testsys_test1",
-			"filename": "softwareversion",
+       "name": "buildserver01",
 			"normal": 
 			{			
 				"nodejs": 
 				{
-					"version": "0.28"
+					"version": "0.10.40"
 				},
 
 				"testapp": 
@@ -191,38 +217,11 @@ array.
 
 				"mongodb": 
 				{
-					"package_version": "2.6.1"
+					"package_version": "2.6.9"
 				}
-			},
-			"conditional" : [
-				{
-					"qualifier": "node_type",
-					"value" : "buildserver",
-					"normal": 
-					{
-						"mongodb": 
-						{
-							"package_version": "2.5.1"
-						}
-					}
-				}
-			]
+			}
 		}
 	]
-```
-
-Attributes listed directly under an attribute priority (e.g. 'normal'
-in the above) will generate an entry in the attribute file such as:
-
-  normal['mongodb'][package_version] = "2.6.1"
-  
-Attributes listed under the `conditional` property will generate an 
-entry in the attribute file such as:
-
-```
-  if (node['topo']['node_type'] == "buildserver")
-    normal['mongodb']['package_version'] = "2.5.1"
-  end
 ```
 
 # Subcommands <a name="subcommands"></a>
@@ -237,8 +236,6 @@ The additional subcommands can also be useful, depending on your
 workflow:
 
 * [knife topo bootstrap](#bootstrap)- Bootstraps a topology of nodes
-* [knife topo cookbook create](#cookbook-create) - Generate the topology cookbooks
-* [knife topo cookbook upload](#cookbook-upload) - Upload the topology cookbooks
 * [knife export](#export) - Export data from a topology (or from nodes that you want in a topology)
 * [knife topo list](#list) - List the topologies
 * [knife topo search](#search) - Search for nodes that are in a topology, or in no topology
@@ -271,6 +268,7 @@ The knife topo bootstrap  subcommand supports the following additional options.
 
 Option        | Description
 ------------  | -----------
+--overwrite | Re-bootstrap existing nodes
 See [knife bootstrap](http://docs.opscode.com/knife_bootstrap.html)  | Options supported by `knife bootstrap` are passed through to the bootstrap command
 
 
@@ -279,49 +277,6 @@ The following will bootstrap nodes in the test1 topology, using a
 user name of vagrant, password of vagrant, and running using sudo.
 
 	$ knife topo bootstrap test1 -x vagrant -P vagrant --sudo
-
-## knife topo cookbook create <a name="cookbook-create"></a>
-
-	knife topo cookbook create TOPOLOGY_FILE
-
-Generates the topology cookbook attribute files and attributes described in the 
-[cookbook_attributes](#cookbook-attributes) property.
-
-### Options:
-
-The knife topo cookbook create subcommand supports the following additional options.
-
-Option        | Description
-------------  | -----------
-See [knife cookbook create](http://docs.opscode.com/chef/knife.html#cookbook)  |   Options supported by `knife cookbook create` are passed through
-
-### Examples:
-The following will generate the topology cookbook attribute files for
-topology test1.
-
-	$ knife topo cookbook create test1
-
-## knife topo cookbook upload <a name="cookbook-upload"></a>
-
-	knife topo cookbook upload TOPOLOGY
-
-Uploads the topology cookbook.
-
-### Options:
-
-The knife topo cookbook upload subcommand supports the following additional options.
-
-Option        | Description
-------------  | -----------
-See [knife cookbook upload](http://docs.opscode.com/chef/knife.html#cookbook)  |  Options supported by `knife cookbook upload` are passed through
-
-
-### Examples:
-The following will generate the topology cookbook attribute files for
-topology test1.
-
-	$ knife topo cookbook create test1.json
-	
   
 ## knife topo create <a name="create"></a>
 
@@ -329,8 +284,9 @@ topology test1.
 
 Creates the specified topology in the chef server as an item in the 
 topology data bag. Creates the chef environment associated
-with the topology, if it does not already exist. Uploads any
-topology cookbooks. Updates existing nodes based on the topology
+with the topology, if it does not already exist. Uploads the
+topology cookbook, if using the 'via_cookbook' method. 
+Updates existing nodes based on the topology
 information. New nodes will be created if the bootstrap option is
 specified.
 
@@ -343,6 +299,7 @@ Option        | Description
 --bootstrap    | Bootstrap the topology (see [topo bootstrap](#bootstrap))
 See [knife bootstrap](http://docs.opscode.com/knife_bootstrap.html)  | Options supported by `knife bootstrap` are passed through to the bootstrap command
 --disable-upload   | Do not upload topology cookbooks
+--overwrite | Re-bootstrap existing nodes
 
 ### Examples:
 The following will create the 'test1' topology, and bootstrap it.
@@ -364,7 +321,7 @@ which is used by `knife topo search`.
 
 ## knife topo export <a name="export"></a>
 
-	knife topo export [ NODE ... ] 
+	knife topo export NODE [ NODE ... ] 
 
 Exports the nodes into a topology JSON. 
 
