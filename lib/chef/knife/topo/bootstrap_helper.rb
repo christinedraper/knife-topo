@@ -45,15 +45,23 @@ module KnifeTopo
       args -= ['--bootstrap']
       args[1] = data['ssh_host']
 
-      # And set up the node-specific data
+      # And set up the node-specific data but ONLY if defined
       args += ['-N', data['name']] if data['name']
       args += ['-E', data['chef_environment']] if data['chef_environment']
       args += ['--ssh-port', data['ssh_port']] if data['ssh_port']
       args += ['--run-list', data['run_list'].join(',')] if data['run_list']
-      args += ['--json-attributes', data['normal'].to_json] if data['normal']
+      attrs = attributes_for_bootstrap(data)
+      args += ['--json-attributes', attrs.to_json] unless attrs.empty?
       args
     end
     # rubocop:enable Metrics/AbcSize
+
+    # for bootstrap, attributes have to include tags
+    def attributes_for_bootstrap(data)
+      attrs = data['normal'] || {}
+      attrs['tags'] = data['tags'] if data['tags']
+      attrs
+    end
 
     def delete_client_node(node_name)
       ui.info("Node #{node_name} exists and will be overwritten")

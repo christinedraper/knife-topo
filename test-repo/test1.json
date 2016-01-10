@@ -1,10 +1,12 @@
 {
 	"name": "test1",
 	"chef_environment": "test",
-	"tags": 
-	[
-		"testsys"
-	],
+	"strategy": "via_cookbook",
+	"strategy_data":{
+		"cookbook": "topo_test1",
+		"filename": "topology"
+	},
+	"tags": [ "testsys" ],
 	"normal": 
 	{
 		"owner": {
@@ -17,77 +19,15 @@
 	[
 		{
 			"name": "appserver01",
+			"node_type": "appserver",
 			"ssh_host": "10.0.1.3",
 			"run_list": 
 			[
 				"recipe[apt]",
 				"recipe[testapp::appserver]",
 				"testapp::deploy",
-				"testsys_test1"
+				"topo_test1"
 			],
-
-			"normal": 
-			{
-				"topo": 
-				{
-					"node_type": "appserver"
-				}
-			}
-		},
-		{
-			"name": "dbserver01",
-			"ssh_host": "10.0.1.2",
-			"run_list": 
-			[
-				"recipe[apt]",
-				"recipe[testapp::db]",
-				"testsys_test1"
-			],
-
-			"tags": 
-			[
-				"testapp_database"
-			],
-
-			"normal": 
-			{
-				"topo": 
-				{
-					"node_type": "dbserver"
-				}
-			}
-		},
-		{
-			"name": "buildserver01",
-			"chef_environment": "dev",
-			"run_list": 
-			[
-				"recipe[apt]",
-				"recipe[testapp::db]",
-				"recipe[testapp::appserver]",
-				"recipe[testapp::deploy]",
-				"testsys_test1"
-			],
-
-			"tags": 
-			[
-			],
-
-			"normal": 
-			{
-				"topo": 
-				{
-					"node_type": "buildserver"
-				}
-			}
-		}
-	],
-
-	"cookbook_attributes": 
-	[
-		{
-			"cookbook": "testsys_test1",
-			"filename": "softwareversion",
 			"normal": 
 			{			
 				"nodejs": 
@@ -106,25 +46,51 @@
 					"user": "vagrant",
 					"path": "/home/vagrant"
 				},
-
 				"mongodb": 
 				{
 					"package_version": "2.6.1"
 				}
-			},
-			"conditional" : [
+			}
+		},
+		{
+			"name": "dbserver01",
+			"node_type": "dbserver",
+			"ssh_host": "10.0.1.2",
+			"run_list": 
+			[
+				"recipe[apt]",
+				"recipe[testapp::db]",
+				"topo_test1"
+			],
+			"tags": [ "testapp_database" ],
+			"normal" :
+			{
+				"mongodb": 
 				{
-					"qualifier": "node_type",
-					"value" : "buildserver",
-					"normal": 
-					{
-						"mongodb": 
-						{
-							"package_version": "2.5.1"
-						}
-					}
+					"package_version": "2.6.1"
 				}
-			]
+			}
+		},
+		{
+			"name": "buildserver01",
+			"node_type": "buildserver",
+			"chef_environment": "dev",
+			"run_list": 
+			[
+				"recipe[apt]",
+				"recipe[testapp::db]",
+				"recipe[testapp::appserver]",
+				"recipe[testapp::deploy]",
+				"topo_test1"
+			],
+
+			"normal": 
+			{
+				"mongodb": 
+				{
+					"package_version": "2.5.1"
+				}
+			}
 		}
 	]
 }

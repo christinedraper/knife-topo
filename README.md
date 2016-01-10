@@ -59,7 +59,9 @@ import. You can also explicitly specify the input format using
 
 Install knife-topo as a gem
 
-    $ chef gem install knife-topo
+```
+  $ chef gem install knife-topo
+```
 
 # Usage #
 
@@ -86,7 +88,7 @@ The instructions assume you have [chefDK](https://downloads.chef.io/chef-dk/)
  
 Generate a topology file for a topology called test1 from existing nodes node1 and node2:
 
-	knife topo export node1 node2 --topo test1 > test1.json
+  knife topo export node1 node2 --topo test1 > test1.json
 
 Import a topology json file, generating all of the necessary artifacts in your workspace:
 
@@ -114,9 +116,9 @@ an array defining topology cookbook attributes.
 ```
     {
         "name": "test1",
-        "chef_environment": "test",
-        "tags": ["system_sys1", "phase_test" ],
         "node_type": "appserver",
+        "chef_environment": "test",
+        "tags": [ "testsys" ],
         "normal": {
           "owner": {
             "name": "Christine Draper"
@@ -127,6 +129,7 @@ an array defining topology cookbook attributes.
         ]
     }
 ```
+
 The `name` is how you will refer to the topology in the
 `knife topo` subcommands.
 
@@ -151,7 +154,7 @@ and attribute filename.
         ...
         "strategy" : "via_cookbook",
         "strategy_data": {
-          "cookbook": "testsys_test1",
+          "cookbook": "topo_test1",
           "filename": "softwareversion",
       }
     }
@@ -171,14 +174,18 @@ Each topology contains a list of `nodes`.
         ...
         "nodes": [
            {
-                "name": "buildserver01",
-                "node_type" : "buildserver",
-                "ssh_host": "192.168.1.201",
-                "ssh_port": "2224",
-                "chef_environment": "dev",
-                "run_list": ["role[base-ubuntu]", "ypo::db", "recipe[ypo::appserver]"],
-                ... node attributes, see below ...,
-                "tags": ["build"]
+              "name": "buildserver01",
+              "node_type" : "buildserver",
+              "ssh_host": "192.168.1.201",
+              "ssh_port": "2224",
+              "chef_environment": "dev",
+              "run_list": [ 
+                "role[base-ubuntu]", 
+                "ypo::db", 
+                "recipe[ypo::appserver]"
+              ],
+              ... node attributes, see below ...,
+              "tags": [ "build" ]
             },
             ...
         ]
@@ -198,15 +205,14 @@ bootstrap a node.
 
 ## Node Attributes <a name="node-attributes"></a>
 
-Each topology may have attributes that are set via
-an attribute file in a topology-specific cookbook. Each
-attribute file is described in an entry in the 'cookbook_attributes'
-array.
+Each topology may have attributes that are set on each node
+according to the attribute setting strategy. The attribute names and
+values are specified by priority ('default', 'normal', 'override').
 
 ```
 	"nodes": [
 		{
-       "name": "buildserver01",
+      "name": "buildserver01",
 			"normal": 
 			{			
 				"nodejs": 
