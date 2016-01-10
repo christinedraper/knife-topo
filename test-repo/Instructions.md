@@ -151,7 +151,7 @@ Topology: test1
 ```
 
 To confirm that the bootstrap has succeeded, browse to: 
-[http://localhost:3031](http://localhost:3031).
+[http://localhost:3001](http://localhost:3001).
 You should see a "Congratulations" message.
 
 You can see the results of the plugin on the Chef server using 

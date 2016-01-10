@@ -52,9 +52,25 @@ class Chef
 
     # Make sure the JSON has an id and other expected fields
     def raw_data=(new_data)
-      new_data['id'] ||= new_data['name']
-      super
+      new_data['id'] ||= (new_data['name'] || 'undefined')
+      new_data['nodes'] ||= []
+      super(normalize(new_data))
       @strategy = raw_data['strategy'] || 'direct_to_node'
+    end
+
+    # clean up some variations so we only have to process one way
+    # in particular, allow 'attributes' as a synonym for 'normal'
+    def normalize(data)
+      data['nodes'] = data['nodes'].map do |n|
+        if n.key?('attributes')
+          n['normal'] = Chef::Mixin::DeepMerge.merge(
+            n['normal'], n['attributes']
+          )
+          n.delete('attributes')
+        end
+        n
+      end
+      data
     end
 
     def display_info
@@ -77,11 +93,11 @@ class Chef
     end
 
     def topo_name
-      raw_data['name'] || 'undefined'
+      raw_data['name']
     end
 
     def nodes
-      raw_data['nodes'] || []
+      raw_data['nodes']
     end
 
     # nodes with topo properties merged in
