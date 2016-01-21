@@ -21,7 +21,6 @@
 # based on the strategy
 #
 
-require 'chef/mixin/deep_merge'
 module KnifeTopo
   # Base processor
   class Processor

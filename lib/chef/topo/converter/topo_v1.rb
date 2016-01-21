@@ -71,9 +71,10 @@ class Chef
 
       # move source[p] contents and merge into dest[p]
       def merge_copy(dest, source)
+        # Go in reverse order so higher priority attrs are at top
         PRIORITIES.reverse_each do |p|
           if source.key?(p)
-            dest[p] = Chef::Mixin::DeepMerge.merge(source[p], dest[p])
+            dest[p] = Chef::Mixin::DeepMerge.merge(dest[p], source[p])
           end
         end
       end

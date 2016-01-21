@@ -164,5 +164,12 @@ describe KnifeTopo::TopoUpdate do
       updated = @cmd.update_node_with_values(node, @topo1_update['nodes'][0])
       expect(updated).to eq(false)
     end
+
+    it 'merges attributes the right way round' do
+      node = Chef::Node.new
+      node.normal = { 'attr1' => 'val1' }
+      @cmd.update_node_with_values(node, 'normal' => { 'attr1' => 'val2' })
+      expect(node['attr1']).to eq('val2')
+    end
   end
 end
