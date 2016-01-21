@@ -81,7 +81,7 @@ module KnifeTopo
     def update_attrs(node, attrs)
       return false unless attrs
       attrs.delete('tags')
-      original = node.normal.clone
+      original = Marshal.load(Marshal.dump(node.normal))
       node.normal = Chef::Mixin::DeepMerge.merge(node.normal, attrs)
       original != node.normal
     end

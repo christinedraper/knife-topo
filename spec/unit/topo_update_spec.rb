@@ -171,5 +171,13 @@ describe KnifeTopo::TopoUpdate do
       @cmd.update_node_with_values(node, 'normal' => { 'attr1' => 'val2' })
       expect(node['attr1']).to eq('val2')
     end
+
+    it 'detects and saves change in nested attributes' do
+      node = Chef::Node.new
+      node.normal = { 'level1' => { 'level2' => { 'attr1' => 'val1' } } }
+      expect(node).to receive(:save)
+      @cmd.do_node_updates(node, 'normal' => { 'level1' =>
+        { 'level2' => { 'attr1' => 'val2' } } })
+    end
   end
 end
