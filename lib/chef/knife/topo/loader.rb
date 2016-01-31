@@ -107,9 +107,10 @@ module KnifeTopo
     end
 
     def list_topo_bag
-      Chef::DataBag.load(topo_bag_name)
+      list = Chef::DataBag.load(topo_bag_name)
     rescue Net::HTTPServerException => e
       raise unless e.to_s =~ /^404/
+      {}
     end
 
     def load_node_data(node_name, min_priority = 'default')
