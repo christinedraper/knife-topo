@@ -25,7 +25,9 @@ class Chef
   class Topology < Chef::DataBagItem
     attr_accessor :strategy
 
-    PRIORITIES = %w(default force_default normal override force_override)
+    PRIORITIES = %w(
+      default force_default normal override force_override
+    ).freeze
 
     # Have to override and say this is a data bag json_class
     # or get error on upload re 'must specify id'
@@ -41,7 +43,7 @@ class Chef
     end
 
     def self.convert_from(format, data)
-      from_json((Chef::Topo::Converter.convert(format, data)))
+      from_json(Chef::Topo::Converter.convert(format, data))
     end
 
     def self.from_json(data)
@@ -52,10 +54,11 @@ class Chef
 
     # Make sure the JSON has an id and other expected fields
     def raw_data=(new_data)
+      @strategy = new_data['strategy'] || 'direct_to_node'
       new_data['id'] ||= (new_data['name'] || 'undefined')
+#      new_data['name'] ||= (new_data['id'])
       new_data['nodes'] ||= []
       super(normalize(new_data))
-      @strategy = raw_data['strategy'] || 'direct_to_node'
     end
 
     # clean up some variations so we only have to process one way
@@ -98,6 +101,10 @@ class Chef
 
     def nodes
       raw_data['nodes']
+    end
+
+    def merge_attrs
+      raw_data['strategy_data'] && raw_data['strategy_data']['merge_attrs']
     end
 
     # nodes with topo properties merged in
