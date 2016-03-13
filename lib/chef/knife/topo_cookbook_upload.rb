@@ -37,14 +37,14 @@ module KnifeTopo
     )
 
     # Make called command options available
-    self.options = (Chef::Knife::CookbookUpload.options).merge(
+    self.options = Chef::Knife::CookbookUpload.options.merge(
       TopoCookbookUpload.options)
 
     include KnifeTopo::Loader
 
     def initialize(args)
       super
-      @args  = args
+      @args = args
 
       # All called commands need to accept union of options
       Chef::Knife::CookbookUpload.options = options

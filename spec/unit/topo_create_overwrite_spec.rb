@@ -28,7 +28,7 @@ require 'chef/knife/topo_create'
 
 describe 'KnifeTopo::TopoCreate Overwrite' do
   before :each do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
 
     data = UnitTestData.new
     @topobag_name = 'testsys_test'
@@ -71,8 +71,8 @@ describe 'KnifeTopo::TopoCreate Overwrite' do
     ).with(@merged_data['nodes'][0], anything, true).and_return(true)
     allow(cmd).to receive(
       :update_node
-    ).with(@merged_data['nodes'][0]).and_return(nil)
-    expect(cmd).to receive(:update_node).with(@merged_data['nodes'][1])
+    ).with(@merged_data['nodes'][0], nil).and_return(nil)
+    expect(cmd).to receive(:update_node).with(@merged_data['nodes'][1], nil)
 
     cmd.run
 

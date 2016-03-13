@@ -29,7 +29,7 @@ require 'chef/node'
 
 describe 'KnifeTopo::TopoCreate Bootstrap' do
   before :each do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
 
     @topobag_name = 'testsys_test'
     @topo1_name = 'topo1'
@@ -47,12 +47,14 @@ describe 'KnifeTopo::TopoCreate Bootstrap' do
 
   it 'disables upload and only bootstraps new nodes with --bootstrap '\
     'and not --overwrite' do
-    cmd = KnifeTopo::TopoCreate.new([
-      'topo1',
-      '--bootstrap',
-      '--disable-upload',
-      "--data-bag=#{@topobag_name}"
-    ])
+    cmd = KnifeTopo::TopoCreate.new(
+      [
+        'topo1',
+        '--bootstrap',
+        '--disable-upload',
+        "--data-bag=#{@topobag_name}"
+      ]
+    )
 
     expect(cmd).to receive(:load_local_topo_or_exit).with(
       @topo1_name
@@ -73,9 +75,11 @@ describe 'KnifeTopo::TopoCreate Bootstrap' do
     expect(cmd).not_to receive(:run_bootstrap).with(
       @merged_data['nodes'][1], anything, anything
     )
-    expect(cmd).not_to receive(:update_node).with(@merged_data['nodes'][0])
+    expect(cmd).not_to receive(:update_node).with(
+      @merged_data['nodes'][0], nil
+    )
     expect(cmd).to receive(:update_node).with(
-      @merged_data['nodes'][1]
+      @merged_data['nodes'][1], nil
     ).and_return(true)
 
     cmd.run

@@ -27,7 +27,7 @@ require 'chef/knife/topo_list'
 
 describe KnifeTopo::TopoList do
   before :each do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
   end
   describe '#run' do
     let(:cmd) { KnifeTopo::TopoList.new(['--data-bag=topologies']) }

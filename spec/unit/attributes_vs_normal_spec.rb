@@ -33,8 +33,8 @@ describe 'KnifeTopo attributes' do
         },
         {
           'name' => 'node2',
-          'attributes' => { 'test' => { 'anAttr' => 'value2'  } },
-          'normal' => { 'test' => { 'anotherAttr' => 'value3'  } }
+          'attributes' => { 'test' => { 'anAttr' => 'value2' } },
+          'normal' => { 'test' => { 'anotherAttr' => 'value3' } }
         }
       ]
     }

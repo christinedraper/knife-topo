@@ -15,6 +15,6 @@ Gem::Specification.new do |spec|
   spec.license       = 'Apache License (2.0)'
 
   spec.files         = Dir.glob('{lib}/**/*') +
-    ['LICENSE', 'README.md', __FILE__]
+                       ['LICENSE', 'README.md', __FILE__]
   spec.require_paths = ['lib']
 end

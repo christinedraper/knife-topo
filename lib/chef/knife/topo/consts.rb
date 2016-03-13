@@ -1,4 +1,4 @@
 # constants
 module KnifeTopo
-  PRIORITIES = %w(default force_default normal override force_override)
+  PRIORITIES = %w(default force_default normal override force_override).freeze
 end

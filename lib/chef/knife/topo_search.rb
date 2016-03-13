@@ -41,7 +41,7 @@ module KnifeTopo
 
     # Make the base search options available on topo search
     orig_opts = KnifeTopo::TopoSearch.options
-    self.options = (Chef::Knife::Search.options).merge(orig_opts)
+    self.options = Chef::Knife::Search.options.merge(orig_opts)
 
     include KnifeTopo::CommandHelper
 
@@ -75,7 +75,7 @@ module KnifeTopo
       group_query = query && !query.start_with?('NOT') ? "(#{query})" : query
 
       # search specific topologies or all/none
-      constraint = (topo_name) ? 'topo_name:' + topo_name : 'topo_name:*'
+      constraint = topo_name ? 'topo_name:' + topo_name : 'topo_name:*'
 
       # combine the grouped query and constraint
       combine(query, group_query, constraint)

@@ -29,7 +29,7 @@ require 'chef/node'
 
 describe KnifeTopo::TopoCookbookCreate do
   before :each do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
 
     @data = {
       'id' => 'topo1',

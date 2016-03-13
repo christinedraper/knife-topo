@@ -25,7 +25,7 @@ module KnifeTopo
   # Node update helper for knife topo
   module NodeUpdateHelper
     # Update an existing node
-    def update_node(node_updates)
+    def update_node(node_updates, merge = false)
       config[:disable_editing] = true
 
       begin
@@ -34,7 +34,7 @@ module KnifeTopo
 
         env = node_updates['chef_environment']
         check_chef_env(env) unless env == node['chef_environment']
-        do_node_updates(node, node_updates)
+        do_node_updates(node, node_updates, merge)
 
       rescue Net::HTTPServerException => e
         raise unless e.to_s =~ /^404/
@@ -44,8 +44,8 @@ module KnifeTopo
       node
     end
 
-    def do_node_updates(node, node_updates)
-      updated = update_node_with_values(node, node_updates)
+    def do_node_updates(node, node_updates, merge = false)
+      updated = update_node_with_values(node, node_updates, merge)
       if updated
         ui.info "Updating #{updated.join(', ')} on node #{node.name}"
         node.save
@@ -56,11 +56,11 @@ module KnifeTopo
     end
 
     # Update original node, return list of updated properties.
-    def update_node_with_values(node, updates)
+    def update_node_with_values(node, updates, merge = false)
       updated = []
 
       # merge the normal attributes (but not tags)
-      updated << 'normal' if update_attrs(node, updates['normal'])
+      updated << 'normal' if update_attrs(node, updates['normal'], merge)
 
       # update runlist
       updated << 'run_list' if update_runlist(node, updates['run_list'])
@@ -74,15 +74,20 @@ module KnifeTopo
       updated << 'tags' if update_tags(node, updates['tags'])
 
       # return false if no updates, else return array of property names
-      updated.length > 0 && updated
+      !updated.empty? && updated
     end
 
     # Update methods all return true if an actual update is made
-    def update_attrs(node, attrs)
+    def update_attrs(node, attrs, merge = false)
       return false unless attrs
-      attrs.delete('tags')
+      # keep the current tags
+      attrs['tags'] = node.normal.tags
       original = Marshal.load(Marshal.dump(node.normal))
-      node.normal = Chef::Mixin::DeepMerge.merge(node.normal, attrs)
+      node.normal = if merge
+                      Chef::Mixin::DeepMerge.merge(node.normal, attrs)
+                    else
+                      attrs
+                    end
       original != node.normal
     end
 

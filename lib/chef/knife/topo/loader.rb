@@ -107,7 +107,7 @@ module KnifeTopo
     end
 
     def list_topo_bag
-      list = Chef::DataBag.load(topo_bag_name)
+      Chef::DataBag.load(topo_bag_name)
     rescue Net::HTTPServerException => e
       raise unless e.to_s =~ /^404/
       {}

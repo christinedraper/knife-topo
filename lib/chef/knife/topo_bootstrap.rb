@@ -47,7 +47,7 @@ module KnifeTopo
     )
 
     # Make the base bootstrap options available on topo bootstrap
-    self.options = (Chef::Knife::Bootstrap.options).merge(TopoBootstrap.options)
+    self.options = Chef::Knife::Bootstrap.options.merge(TopoBootstrap.options)
 
     attr_accessor :msgs, :results
 
@@ -120,21 +120,21 @@ module KnifeTopo
 
     # Report is used by create, update and bootstrap commands
     def report
-      if @topo['nodes'].length > 0
+      if @topo['nodes'].empty?
+        ui.info 'No nodes found'
+      else
         report_msg(:bootstrapped, :info, false) if @bootstrap
         report_msg(:skipped, :info, true)
         report_msg(:skipped_ssh, :info, true)
         report_msg(:existed, :info, true)
         report_msg(:failed, :warn, true) if @bootstrap
-      else
-        ui.info 'No nodes found'
       end
       ui.info("Topology: #{@topo.display_info}")
     end
 
     def report_msg(state, level, only_non_zero = true)
       nodes = @results[state]
-      return if only_non_zero && nodes.length == 0
+      return if only_non_zero && nodes.empty?
       ui.send(level, @msgs[state] %
         { num: nodes.length, list: nodes.join(', ') })
     end

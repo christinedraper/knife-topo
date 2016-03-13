@@ -23,7 +23,7 @@ require 'chef/knife/topo_update'
 
 describe KnifeTopo::TopoUpdate do
   before :each do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
     @cmd = KnifeTopo::TopoUpdate.new(%w(knife  topo  update  topo1))
 
     # setup test data bags
@@ -62,6 +62,25 @@ describe KnifeTopo::TopoUpdate do
         }
       ]
     }
+    @topo1_newdata2 = {
+      'id' => 'topo1',
+      'name' => 'topo1',
+      'strategy' => 'direct_to_node',
+      'strategy_data' => { 'merge_attrs' => true },
+      'nodes' => [
+        {
+          'name' => 'node1',
+          'run_list' => ['recipe[apt]', 'role[ypo::db]', 'recipe[a::default]'],
+          'tags' => ['tag1'],
+          'chef_environment' => 'new_test'
+        },
+        {
+          'name' => 'node2',
+          'chef_environment' => 'dev',
+          'normal' => { 'secondAttr' => 'newValue' }
+        }
+      ]
+    }
     @topo1_update = {
       'id' => 'topo1',
       'name' => 'topo1',
@@ -94,6 +113,9 @@ describe KnifeTopo::TopoUpdate do
     @topo1_item = Chef::Topology.new
     @topo1_item.raw_data = @topo1_newdata
     @topo1_item.data_bag(@topobag_name)
+    @topo1_item2 = Chef::Topology.new
+    @topo1_item2.raw_data = @topo1_newdata2
+    @topo1_item2.data_bag(@topobag_name)
 
     @exception_404 = Net::HTTPServerException.new(
       '404 Not Found', Net::HTTPNotFound.new('1.1', '404', 'Not Found')
@@ -120,8 +142,41 @@ describe KnifeTopo::TopoUpdate do
 
       expect(@topo1_item).to receive(:save)
 
-      expect(@cmd).to receive(:update_node).with(@topo1_update['nodes'][0])
-      expect(@cmd).to receive(:update_node).with(@topo1_update['nodes'][1])
+      expect(@cmd).to receive(:update_node).with(
+        @topo1_update['nodes'][0], nil
+      )
+      expect(@cmd).to receive(:update_node).with(
+        @topo1_update['nodes'][1], nil
+      )
+
+      @cmd.run
+    end
+
+    it 'merges attributes if set in strategy data' do
+      @cmd.name_args = [@topo1_name]
+
+      allow(@cmd).to receive(
+        :resource_exists?
+      ).with('nodes/node1').and_return(false)
+      allow(@cmd).to receive(
+        :resource_exists?
+      ).with('nodes/node2').and_return(true)
+      expect(@cmd).to receive(
+        :load_local_topo_or_exit
+      ).with(@topo1_name).and_return(@topo1_item2)
+      expect(@cmd).to receive(
+        :load_topo_from_server
+      ).with(@topo1_name).and_return(@orig_item)
+      expect(@cmd).to receive(:upload_artifacts)
+
+      expect(@topo1_item2).to receive(:save)
+
+      expect(@cmd).to receive(:update_node).with(
+        anything, true
+      )
+      expect(@cmd).to receive(:update_node).with(
+        anything, true
+      )
 
       @cmd.run
     end
@@ -136,7 +191,9 @@ describe KnifeTopo::TopoUpdate do
       data = @topo1_update['nodes'][0]
       expect(@cmd).to receive(
         :update_node_with_values
-      ).with(node, data).and_return(%w(normal  run_list  chef_environment tags))
+      ).with(node, data, false).and_return(
+        %w(normal run_list chef_environment tags)
+      )
       @cmd.update_node(@topo1_update['nodes'][0])
     end
 
@@ -147,6 +204,20 @@ describe KnifeTopo::TopoUpdate do
       expect(node).not_to receive(:save)
       expect(@cmd).to receive(:check_chef_env).with('new_test')
       @cmd.update_node(@topo1_update['nodes'][0])
+    end
+
+    it 'merges attributes when merge is true' do
+      node = Chef::Node.new
+      node.normal = { 'a' => 1 }
+      @cmd.update_node_with_values(node, @topo1_update['nodes'][0], true)
+      expect(node.normal['a']).to eq(1)
+    end
+
+    it 'sets attributes when merge is false' do
+      node = Chef::Node.new
+      node.normal = { 'a' => 1 }
+      @cmd.update_node_with_values(node, @topo1_update['nodes'][0], false)
+      expect(node.normal['a']).not_to have_key('a')
     end
   end
 

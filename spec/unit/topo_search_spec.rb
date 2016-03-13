@@ -24,12 +24,12 @@ require 'chef/node'
 
 describe KnifeTopo::TopoSearch do
   before(:each) do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
   end
 
   describe '#run' do
     it 'searches for nodes in any topology' do
-      @cmd  = KnifeTopo::TopoSearch.new(%w(topo  search))
+      @cmd = KnifeTopo::TopoSearch.new(%w(topo  search))
       query = Chef::Search::Query.new
       allow(Chef::Search::Query).to receive(:new).and_return(query)
       expect(query).to receive(:search).with(
@@ -39,7 +39,7 @@ describe KnifeTopo::TopoSearch do
     end
 
     it 'searches for nodes in any topology with name appserver' do
-      @cmd  = KnifeTopo::TopoSearch.new(%w(topo  search  name:appserver))
+      @cmd = KnifeTopo::TopoSearch.new(%w(topo  search  name:appserver))
       query = Chef::Search::Query.new
       allow(Chef::Search::Query).to receive(:new).and_return(query)
       expect(query).to receive(:search).with(
@@ -49,7 +49,7 @@ describe KnifeTopo::TopoSearch do
     end
 
     it 'searches for nodes in no topology' do
-      @cmd  = KnifeTopo::TopoSearch.new(['topo', 'search', '--no-topo'])
+      @cmd = KnifeTopo::TopoSearch.new(['topo', 'search', '--no-topo'])
       query = Chef::Search::Query.new
       allow(Chef::Search::Query).to receive(:new).and_return(query)
       expect(query).to receive(:search).with(
@@ -59,7 +59,7 @@ describe KnifeTopo::TopoSearch do
     end
 
     it 'searches for nodes in a specific topology' do
-      @cmd  = KnifeTopo::TopoSearch.new(
+      @cmd = KnifeTopo::TopoSearch.new(
         %w(topo  search  --topo topo1)
       )
       query = Chef::Search::Query.new
@@ -72,7 +72,7 @@ describe KnifeTopo::TopoSearch do
     end
 
     it 'searches for nodes in no topology with name appserver' do
-      @cmd  = KnifeTopo::TopoSearch.new(
+      @cmd = KnifeTopo::TopoSearch.new(
         %w(topo  search  name:appserver  --no-topo)
       )
       query = Chef::Search::Query.new

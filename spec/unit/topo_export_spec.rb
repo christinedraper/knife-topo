@@ -24,12 +24,12 @@ require 'chef/node'
 
 describe KnifeTopo::TopoExport do
   before(:each) do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
   end
 
   describe '#run' do
     it 'exports a template for an unknown topology' do
-      @cmd  = KnifeTopo::TopoExport.new(
+      @cmd = KnifeTopo::TopoExport.new(
         %w(topo  export  --min-priority=default)
       )
       allow(@cmd).to receive(:load_topo_from_server).and_return(nil)
@@ -40,7 +40,7 @@ describe KnifeTopo::TopoExport do
     end
 
     it 'exports a template for a defined topology' do
-      @cmd  = KnifeTopo::TopoExport.new(
+      @cmd = KnifeTopo::TopoExport.new(
         %w(topo  export --topo=test1 --min-priority=default)
       )
       item = Chef::DataBagItem.new
@@ -55,7 +55,7 @@ describe KnifeTopo::TopoExport do
     end
 
     it 'exports a node for a new topology' do
-      @cmd  = KnifeTopo::TopoExport.new(
+      @cmd = KnifeTopo::TopoExport.new(
         %w(topo  export  appserver1  --min-priority=default)
       )
       allow(@cmd).to receive(:load_topo_from_server).and_return(nil)

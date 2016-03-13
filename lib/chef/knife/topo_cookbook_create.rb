@@ -43,7 +43,7 @@ module KnifeTopo
 
     def initialize(args)
       super
-      @args  = args
+      @args = args
     end
 
     def run

@@ -50,7 +50,7 @@ module KnifeTopo
     # Make called command options available
     orig_opts = KnifeTopo::TopoCreate.options
     upload_opts = Chef::Knife::CookbookUpload.options
-    merged_opts = (KnifeTopo::TopoBootstrap.options).merge(upload_opts)
+    merged_opts = KnifeTopo::TopoBootstrap.options.merge(upload_opts)
     self.options = merged_opts.merge(orig_opts)
 
     include KnifeTopo::CommandHelper
@@ -59,7 +59,7 @@ module KnifeTopo
 
     def initialize(args)
       super
-      @args  = args
+      @args = args
     end
 
     def bootstrap_msgs
@@ -116,8 +116,9 @@ module KnifeTopo
 
     def update_nodes
       nodes = processor.generate_nodes
+      merge = @topo.merge_attrs
       nodes.each do |node_data|
-        bootstrap_or_update_node(node_data)
+        bootstrap_or_update_node(node_data, merge)
       end
     end
 
@@ -130,16 +131,14 @@ module KnifeTopo
       @topo.save
     end
 
-    def bootstrap_or_update_node(node_data)
+    def bootstrap_or_update_node(node_data, merge)
       node_name = node_data['name']
       if @bootstrap
-        update_node(node_data) unless node_bootstrap(node_data)
+        update_node(node_data, merge) unless node_bootstrap(node_data)
+      elsif update_node(node_data, merge)
+        @results[:existed] << node_name
       else
-        if update_node(node_data)
-          @results[:existed] << node_name
-        else
-          @results[:skipped] << node_name
-        end
+        @results[:skipped] << node_name
       end
     end
 

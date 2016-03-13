@@ -82,7 +82,7 @@ module KnifeTopo
       update_nodes!(topo['nodes'])
 
       # pick an topo environment based on the nodes
-      return topo if @node_names.length == 0
+      return topo if @node_names.empty?
       env = pick_env(topo['nodes'])
       topo['chef_environment'] = env if env
       topo
@@ -105,13 +105,13 @@ module KnifeTopo
         'tags' => [],
         'strategy' => 'via_cookbook',
         'strategy_data' => default_strategy_data,
-        'nodes' => @node_names.length == 0 ? [empty_node('node1')] : []
+        'nodes' => @node_names.empty? ? [empty_node('node1')] : []
       }
     end
 
     def default_strategy_data
       {
-        'cookbook' =>  @topo_name || 'topo1',
+        'cookbook' => @topo_name || 'topo1',
         'filename' => 'topology'
       }
     end

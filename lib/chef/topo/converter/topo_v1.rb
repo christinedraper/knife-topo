@@ -26,7 +26,9 @@ class Chef
   module Topo
     # Convert V1 topology JSON to V2
     class TopoV1Converter < Chef::Topo::Converter
-      PRIORITIES = %w(default force_default normal override force_override)
+      PRIORITIES = %w(
+        default force_default normal override force_override
+      ).freeze
 
       register_converter('topo_v1', name)
 
@@ -51,7 +53,7 @@ class Chef
       def determine_strategy
         @output['strategy'] = 'direct_to_node'
         cookbooks = @input['cookbook_attributes']
-        return unless cookbooks && cookbooks.length > 0
+        return unless cookbooks && !cookbooks.empty?
 
         cookbooks.each do |cb|
           cond = cb['conditional'] || []

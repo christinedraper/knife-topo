@@ -31,7 +31,7 @@ require 'chef/node'
 
 describe KnifeTopo::TopoCreate do
   before :each do
-    Chef::Config[:node_name]  = 'christine_test'
+    Chef::Config[:node_name] = 'christine_test'
     data = UnitTestData.new
     @merged_data = data.topo1_merged
     @topo1_data = data.topo1
@@ -82,8 +82,8 @@ describe KnifeTopo::TopoCreate do
       expect(@cmd).not_to receive(:run_bootstrap)
       node1 = @merged_data['nodes'][0]
       node2 = @merged_data['nodes'][1]
-      expect(@cmd).to receive(:update_node).with(node1).and_return(nil)
-      expect(@cmd).to receive(:update_node).with(node2).and_return(true)
+      expect(@cmd).to receive(:update_node).with(node1, nil).and_return(nil)
+      expect(@cmd).to receive(:update_node).with(node2, nil).and_return(true)
 
       @cmd.run
       expect(@cmd.results[:bootstrapped]).to eq([])
@@ -127,7 +127,7 @@ describe KnifeTopo::TopoCreate do
       expect(Chef::Node).to receive(:load).and_raise(@exception_404)
       expect(@cmd).not_to receive(:create_object)
 
-      @cmd.update_node(@topo1_data['nodes'][1])
+      @cmd.update_node(@topo1_data['nodes'][1], false)
     end
   end
 

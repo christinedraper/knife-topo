@@ -62,7 +62,7 @@ module KnifeTopo
     end
 
     def most_common(vals)
-      return if vals.length == 0
+      return if vals.empty?
       vals.group_by do |val|
         val
       end.values.max_by(&:size).first
