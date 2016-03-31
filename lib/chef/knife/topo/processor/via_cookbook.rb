@@ -91,7 +91,8 @@ module KnifeTopo
     def cookbook_path
       paths = @config['cookbook_path']
       return unless paths
-      paths.first
+      # cookbook path can be an array or a string
+      paths.is_a?(Array) ? (paths.first || './cookbooks') : paths
     end
 
     def upload_artifacts(context = {})

@@ -57,6 +57,7 @@ describe KnifeTopo::TopoCookbookCreate do
       ]
     }
     @topo1 = Chef::Topology.from_json(@data)
+    @processor = KnifeTopo::Processor.for_topo(@topo1)
     @cmd = KnifeTopo::TopoCookbookCreate.new(
       ['topo1', "--data-bag=#{@topobag_name}"]
     )

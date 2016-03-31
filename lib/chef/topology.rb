@@ -56,7 +56,7 @@ class Chef
     def raw_data=(new_data)
       @strategy = new_data['strategy'] || 'direct_to_node'
       new_data['id'] ||= (new_data['name'] || 'undefined')
-#      new_data['name'] ||= (new_data['id'])
+      new_data['name'] ||= (new_data['id'])
       new_data['nodes'] ||= []
       super(normalize(new_data))
     end
