@@ -81,7 +81,7 @@ module KnifeTopo
     def update_attrs(node, attrs, merge = false)
       return false unless attrs
       # keep the current tags
-      attrs['tags'] = node.normal.tags
+      attrs['tags'] = node.normal.tags || []
       original = Marshal.load(Marshal.dump(node.normal))
       node.normal = if merge
                       Chef::Mixin::DeepMerge.merge(node.normal, attrs)
@@ -108,7 +108,7 @@ module KnifeTopo
 
     def update_tags(node, tags)
       return false unless tags
-      orig_num_tags = node.tags.length
+      orig_num_tags = node.tags ? node.tags.length : 0
       node.tag(*tags)
       node.tags.length > orig_num_tags
     end
